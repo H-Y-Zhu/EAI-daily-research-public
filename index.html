@@ -1,6 +1,6 @@
-<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<!DOCTYPE html><html lang="en" class="lang-en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>具身智能论文雷达 · Embodied AI Paper Radar</title><style>
+<title data-en="Embodied AI Paper Radar" data-zh="具身智能论文雷达">Embodied AI Paper Radar</title><style>
 body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
  max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
 h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
@@ -28,7 +28,27 @@ figcaption{font-size:12px;color:#777;margin-top:6px}
 .s{color:#999;font-size:12px} li{margin:8px 0} ul{list-style:none;padding:0}
 h3{color:#27408b;margin-top:22px}
 </style></head><body>
-<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+
+<button class="langbtn" id="langbtn" onclick="toggleLang()">中文</button>
+<script>
+function setLang(lang){
+  var en=lang!=='zh';
+  document.documentElement.classList.toggle('lang-en',en);
+  document.documentElement.lang=en?'en':'zh-CN';
+  var b=document.getElementById('langbtn');
+  b.textContent=en?'中文':'English';
+  b.setAttribute('aria-label',en?'Switch to Chinese':'切换为英文');
+  var title=document.querySelector('title');
+  if(title && title.dataset.en) title.textContent=en?title.dataset.en:title.dataset.zh;
+}
+function toggleLang(){
+  var lang=document.documentElement.classList.contains('lang-en')?'zh':'en';
+  try{localStorage.setItem('rd_lang',lang)}catch(e){}
+  setLang(lang);
+}
+(function(){var lang='en';try{lang=localStorage.getItem('rd_lang')||'en'}catch(e){}setLang(lang)})();
+</script>
+
 <h1>📡 <span class="zh">具身智能论文雷达</span><span class="en">Embodied AI Paper Radar</span></h1>
 <p class="s">1571 <span class="zh">篇</span><span class="en">papers</span> · 37 <span class="zh">个批次</span><span class="en">batches</span></p>
 <h2><span class="zh">按类别浏览</span><span class="en">Browse by Category</span></h2>

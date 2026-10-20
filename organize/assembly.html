@@ -1,6 +1,6 @@
-<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<!DOCTYPE html><html lang="en" class="lang-en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Robot assembly · 发展脉络</title><style>
+<title data-en="Robot assembly · Development" data-zh="Robot assembly · 发展脉络">Robot assembly · Development</title><style>
 body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
  max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
 h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
@@ -40,9 +40,29 @@ figcaption{font-size:12px;color:#777;margin-top:6px}
 .anglenav a{display:inline-block;background:#e3e7ef;color:#27408b;text-decoration:none;
   padding:6px 12px;border-radius:14px;border:1px solid #c3ccdf;font-size:14px}
 .anglenav a:hover{background:#bcc4d6}</style></head><body>
-<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+
+<button class="langbtn" id="langbtn" onclick="toggleLang()">中文</button>
+<script>
+function setLang(lang){
+  var en=lang!=='zh';
+  document.documentElement.classList.toggle('lang-en',en);
+  document.documentElement.lang=en?'en':'zh-CN';
+  var b=document.getElementById('langbtn');
+  b.textContent=en?'中文':'English';
+  b.setAttribute('aria-label',en?'Switch to Chinese':'切换为英文');
+  var title=document.querySelector('title');
+  if(title && title.dataset.en) title.textContent=en?title.dataset.en:title.dataset.zh;
+}
+function toggleLang(){
+  var lang=document.documentElement.classList.contains('lang-en')?'zh':'en';
+  try{localStorage.setItem('rd_lang',lang)}catch(e){}
+  setLang(lang);
+}
+(function(){var lang='en';try{lang=localStorage.getItem('rd_lang')||'en'}catch(e){}setLang(lang)})();
+</script>
+
 <p class="back"><a href="../index.html"><span class="zh">← 论文雷达总索引</span><span class="en">← Radar Index</span></a></p>
-<h1>🧭 Robot assembly <span class="s"></span></h1>
+<h1>🧭 <span class="zh">Robot assembly</span><span class="en">Robot assembly</span></h1>
 <p class="sub"><span class="zh">· 发展脉络</span><span class="en">· Development</span></p>
 <p><span class="zh">机器人装配领域正从传统的基于几何规则的精确控制，向融合触觉感知、多模态大模型与强化学习的通用灵巧操作演进。早期研究聚焦于解决几何变化下的视觉仿真到现实迁移及高精度插入基准测试，随后引入触觉扩散策略与力控恢复机制以应对接触丰富的复杂场景。最新进展则致力于构建基础模型与长视界视觉-语言-动作（VLA）策略，通过合成数据驱动和预训练实现家具组装等复杂任务的泛化与自动化。</span><span class="en">The field of robotic assembly is evolving from traditional geometry-rule-based precise control towards general dexterous manipulation that integrates tactile perception, multimodal large models, and reinforcement learning. Early research focused on addressing visual simulation-to-reality transfer under geometric variations and high-precision insertion benchmarks, subsequently introducing tactile diffusion strategies and force-control recovery mechanisms to cope with contact-rich complex scenarios. Latest advances are dedicated to building foundation models and long-horizon vision-language-action (VLA) policies, achieving generalization and automation for complex tasks such as furniture assembly through synthetic data-driven approaches and pre-training.</span></p>
 <h2><span class="zh">切入角度</span><span class="en">Perspectives</span></h2>
