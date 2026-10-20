@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Differential 6-DOF Pose Estimation with Provable First-Order Immunity to Camera Calibration Errors</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Differential 6-DOF Pose Estimation with Provable First-Order Immunity to Camera Calibration Errors</h1>
+<p class="meta">Yueqiang Zhang, Liang Deng, Yi Zhang, Baoqiong Wang, Wenjun Chen, Shuixin Pan<br>
+<a href="http://arxiv.org/abs/2608.04673v1">abs</a><a href="https://arxiv.org/pdf/2608.04673v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给微运动测量领域送来了“降维打击”。传统PnP方法（如EPnP [13]、OPnP [26]）像两个醉汉在走钢丝，先各自算绝对位姿再相减，结果外参校准的微小误差被无限放大，导致微动测量直接“翻车”。作者反其道而行，直接对投影方程做差分，利用李群一阶近似，硬是把平移外参误差给“代数消掉”了，这招“第一阶免疫”简直是对传统流程的降维打击。不过，这招也不是万能的，深度不变性假设在长距离大位移下会失效，且对旋转外参误差只是“有界”而非“免疫”，毕竟物理定律不会完全消失。虽然作者吹嘘这是SOTA，但仔细一看，其核心优势在于“微动”这一特定场景，一旦位移稍大，线性化近似就得歇菜。总的来说，这是一篇在特定细分领域（微动监测）极其精妙的工程数学论文，但别指望它能解决所有位姿估计问题。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">在机器人操作、结构健康监测及精密机械重复性检测中，准确估计移动平台的6-DOF微运动至关重要。然而，现有主流方法（如Perspective-n-Point, PnP）通常采用“两步走”策略：先独立估计两帧的绝对相机位姿，再通过外参变换推导平台运动 [4]。这种架构存在致命缺陷：当平台位移极小（微动）时，相机-平台外参校准误差（尤其是平移误差）的量级往往远超真实位移信号，导致测量结果被校准噪声完全淹没。例如，传统PnP方法（如EPnP [13]、RPnP [23]、OPnP [26]）在微动场景下，其平移估计误差可能高达数十毫米，完全无法用于精密监测。此外，基于2D-2D对应的方法存在尺度模糊，无法直接获取绝对尺度 [11]。因此，亟需一种能直接利用帧间图像位移、从几何上规避外参误差传播的6-DOF微动估计方法。</div><div class="en">—</div><figure><img src="assets/2608.04673/fig1.webp" alt="fig1"><figcaption>Fig. 1. Schematic diagram of the PnP-like method and the proposed method for the relative pose estimation: (a) scene and coordinate frames; (b) the conventional pipeline solves two absolute poses and differences them; (c) the proposed pipeline takes the image-point differences as the direct observation and solves the relative pose in a single linear step, with no absolute pose solved at any stage.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">本文提出了一种基于微分几何的6-DOF位姿估计框架，核心思想是跳过绝对位姿估计，直接建立帧间图像位移与平台相对运动之间的线性关系。整体Pipeline如下：首先，利用已知3D控制点，获取其在连续两帧t0和t1的2D投影点；其次，构建透视投影方程的差分形式，引入深度不变性假设（即微动下深度变化可忽略）；最后，利用李群se(3)的一阶近似将非线性运动方程线性化，通过最小二乘法直接求解平台相对运动参数η。创新点包括：1) 微分建模：通过相减消去绝对位姿项，直接观测图像位移，避免了绝对位姿估计中的误差累积。2) 误差免疫证明：理论推导证明，平移外参误差在差分模型中代数抵消（Exact Immunity），旋转外参误差的影响被限制在运动幅度和观测几何的有界范围内。3) 偏差消除估计器：针对最小二乘法在“变量误差”问题下的不一致性，推导了闭式偏差消除（Bias-Eliminated, BE）估计器，并证明其渐近无偏且达到Cramér-Rao下界。4) 多相机扩展：该方法可自然扩展至多相机刚性系统，通过互补视角进一步抑制旋转外参误差的影响。</div><div class="en">—</div><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">作者在合成数据（模拟桥梁监测场景，距离50-100m）和真实世界数据上进行了广泛验证。基线包括LHM [22]、EPnP+GN [13]、RPnP [23]、DLS [25]、ASPnP [56]及OPnP [26]等。评测指标涵盖旋转（Pitch-Yaw RMSE）和平移（X/Y/Z RMSE）误差及运行时间。结果显示：在0.5像素噪声和5个控制点下，单目求解器平移RMSE仅为3.70mm（传统方法如RPnP高达44.63mm），旋转RMSE为10.09角秒，且运行时间仅0.34ms，比最快基线快4倍。关键发现：1) 平移外参误差对本文方法无影响，而传统方法误差随外参误差线性增长；2) 深度方向（Z轴）估计优势最显著，传统方法因深度弱观测导致误差放大一个数量级；3) 双目配置下，通过互补视角进一步降低了旋转误差。消融实验验证了偏差消除估计器的有效性及深度不变性假设的边界（约±30角分或9mm轴向位移）。</div><div class="en">—</div><figure><img src="assets/2608.04673/fig2.webp" alt="fig2"><figcaption>Fig. 3. RMSE of the rotation and translation components w.r.t. the number of control points: (a)–(c) rotation; (d)–(f) translation.</figcaption></figure>
+<figure><img src="assets/2608.04673/fig3.webp" alt="fig3"><figcaption>Fig. 4. RMSE of the rotation and translation components w.r.t. the image localization noise: (a)–(c) rotation; (d)–(f) translation.</figcaption></figure>
+<figure><img src="assets/2608.04673/fig4.webp" alt="fig4"><figcaption>Fig. 5. Influence of the extrinsic calibration errors on the monocular methods: (a)(b) extrinsic rotation error; (c)(d) extrinsic translation error.</figcaption></figure>
+<figure><img src="assets/2608.04673/fig5.webp" alt="fig5"><figcaption>Fig. 6. Box plots of the rotation and translation errors under the typical condition: (a) rotation; (b) translation.</figcaption></figure>
+<figure><img src="assets/2608.04673/fig6.webp" alt="fig6"><figcaption>Fig. 7. Average runtime of the monocular methods versus the number of control points (6-DOF estimation).</figcaption></figure>
+<figure><img src="assets/2608.04673/fig7.webp" alt="fig7"><figcaption>Fig. 8. RMSE of the rotation and translation components w.r.t. the number of control points: (a)–(c) attitude angles; (d)–(f) translation components.</figcaption></figure>
+<figure><img src="assets/2608.04673/fig8.webp" alt="fig8"><figcaption>Fig. 9. RMSE of the three attitude angles w.r.t. the image localization noise: (a) pitch; (b) yaw; (c) roll.</figcaption></figure>
+<figure><img src="assets/2608.04673/fig9.webp" alt="fig9"><figcaption>Fig. 10. RMSE of the three translation components w.r.t. the image localization noise: (a) X; (b) Y ; (c) Z.</figcaption></figure>
+<figure><img src="assets/2608.04673/fig10.webp" alt="fig10"><figcaption>Fig. 11. Influence of the extrinsic calibration errors on the multi-camera methods: (a)(b) extrinsic rotation error; (c)(d) extrinsic translation error.</figcaption></figure>
+</body></html>

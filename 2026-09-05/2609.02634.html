@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Latent Cluster Analysis for Vision-Language-Action Models</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Latent Cluster Analysis for Vision-Language-Action Models</h1>
+<p class="meta">Theodor Wulff, Sergio Lanza, Tamara Bila, Angelo Cangelosi, Stefan Wermter, Igor Farkas<br>
+<a href="http://arxiv.org/abs/2609.02634v1">abs</a><a href="https://arxiv.org/pdf/2609.02634v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 VLA 模型开了个“黑箱”解剖刀，试图通过聚类分析 GR00T N1.5 的潜在空间，特别是动作解码器部分。亮点在于引入了基于 cross-attention 的嵌入加权，确实让聚类效果提升了 62.1% 的 Silhouette 分数。不过，作者过于依赖单一模型和数据集，概念生成部分用 LLaVA 自动打标，难免有“鹦鹉学舌”的风险，毕竟 CLIPSIM 分数并不高。对于追求可解释性的社区来说，这算是一次不错的尝试，但离真正理解模型“思考”过程还有距离，尤其是长程任务的理解能力未被验证，且聚类假设可能无法捕捉复杂流形结构，限制了结论的普适性。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">VLA 模型在机器人领域表现优异，但内部推理机制不明，存在安全隐患。现有工作如 Häon et al. (2025) 仅关注 FFN 激活，未深入动作解码器。稀疏自编码器（SAEs）虽流行（Huben et al., 2024），但训练成本高且慢，不适合快速迭代的机器人领域。聚类方法无需重训，更合适。然而，现有聚类未考虑动作扩散过程中的时序噪声，导致早期层聚类混乱。本文旨在填补这一空白，通过分析动作解码器的潜在空间，提升语言驱动系统的可信度，解决分布外场景下的不可预测行为问题，为安全部署提供理论支撑。</div><div class="en">—</div><figure><img src="assets/2609.02634/fig1.webp" alt="fig1"><figcaption>Figure 1: Overview of our framework. We collect embeddings (coloured bars) from the last VLM backbone layer and the DiT action decoder. After the collection, we compute two different cluster typologies: baseline clustering applied to all embeddings from each layer; our embedding-weighting module steers the VLM backbone tokens according to their influence in the cross-attention layers. Finally, we generate concepts based on the top-n nearest samples for each cluster and evaluate each of them with CLIP.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分为嵌入收集、加权聚类、概念生成三步。首先，从 GR00T 的 VLM 主干最后层和 DiT 动作解码器的所有 cross-attention 层收集嵌入。创新点在于嵌入加权模块：利用 cross-attention 权重矩阵，计算每个视觉语言 token 的影响力得分，经 softmax 归一化后，与原始 token 进行 Hadamard 积，放大关键特征并抑制噪声。随后，使用凝聚层次聚类算法对加权后的嵌入进行分层聚类。最后，对每个簇选取 top-n 样本，通过外部 VLM（LLaVA-72B）生成人类可解释的概念标签，并用 CLIP 相似度（CLIPSIM）评估。该流程有效区分了时空与运动学特征，揭示了不同层级的关注点差异，增强了潜在空间的结构性。</div><div class="en">—</div><figure><img src="assets/2609.02634/fig7.webp" alt="fig7"><figcaption>Figure 7: Comparative UMAP visualisations of the la- tent space at different layers and diffusion timesteps using PCA-compressed embeddings without and with a weighting mechanism.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验基于 Open-X-Embodiment 数据集的子集，使用冻结的 GR00T N1.5 模型。对比了基线聚类、加权聚类、PCA 及组合方案。结果显示，加权机制显著提升了聚类质量，Silhouette 分数提升 62.1%，DB Index 降低 8%。分析发现，深层和后期扩散步的聚类结构更稳定，且能分离身体部位（如左臂、腰部）的特征分布。Wasserstein 距离分析证实了时空可分性。尽管概念生成的 CLIPSIM 分数有限，但证明了潜在空间组织的连贯性，为后续研究提供了基准，但也暴露了短视域数据的局限性，未来需验证长程任务表现。</div><div class="en">—</div><figure><img src="assets/2609.02634/fig2.webp" alt="fig2"><figcaption>Figure 3: Mean number of clusters over diffusion timesteps</figcaption></figure>
+<figure><img src="assets/2609.02634/fig3.webp" alt="fig3"><figcaption>Figure 2: Heatmaps of cluster sizes across different layers and LAVLA configurations.</figcaption></figure>
+<figure><img src="assets/2609.02634/fig5.webp" alt="fig5"><figcaption>Figure 5: Wasserstein distances between feature distributions of top clusters within VL backbone</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2609.02634/fig4.webp" alt="fig4"><figcaption>Figure 4: Layer-wise cluster overlap matrices for differ- ent LAVLA configurations.</figcaption></figure>
+<figure><img src="assets/2609.02634/fig6.webp" alt="fig6"><figcaption>Figure 6: Wasserstein distances between feature distributions of top clusters of cross-attention layer 14 at final diffusion timestep (t=3).</figcaption></figure>
+<figure><img src="assets/2609.02634/fig8.webp" alt="fig8"><figcaption>Figure 8: Visualisation of the first two principal components of the latent space across layers (rows) and timesteps (columns). Each subplot shows the latent space structure for a specific layer–timestep combination, illustrating how latent representations evolve through the network.</figcaption></figure>
+<figure><img src="assets/2609.02634/fig9.webp" alt="fig9"><figcaption>Figure 11: Violin plots of feature distributions of top clusters of cross-attention layer 14 at final diffusion timestep (t=3).</figcaption></figure>
+<figure><img src="assets/2609.02634/fig10.webp" alt="fig10"><figcaption>Figure 10: Violin plots of feature distributions of top clusters within VL backbone</figcaption></figure>
+</body></html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STeP: Signal Temporal Logic for Precise Specifications for Action Generation with Vision Language Models</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>STeP: Signal Temporal Logic for Precise Specifications for Action Generation with Vision Language Models</h1>
+<p class="meta">Kasra Torshizi, Anukriti Singh, Sidharth Mathur, Khuzema Habib, Leo Du, Pratap Tokekar<br>
+<a href="http://arxiv.org/abs/2607.18580v1">abs</a><a href="https://arxiv.org/pdf/2607.18580v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图给 Vision-Language-Action (VLA) 模型穿上“形式化方法”的西装，名为 STeP。核心是用信号时序逻辑（STL）作为高层语言理解和底层执行的通用接口。亮点在于将 STL 嵌入到了规划、执行、监控和重规划的全流程，而不仅仅是生成规范，这确实提升了可解释性和约束满足的可靠性。但槽点也不少：System 2 依赖 VLM 生成 STL 规范，如果 VLM 幻觉了怎么办？文中提到 VLM 仍可能产生不完整规范，且缺乏对复杂空间细节的感知。此外，线性子任务序列限制了复杂循环行为，MPC 求解器也较简单，在杂乱环境中表现受限。总的来说，这是“形式化”与“学习”结合的一次务实尝试，证明了显式规范层优于单一策略，但离真正的鲁棒通用机器人还有距离，尤其是 VLM 生成规范的稳定性仍是瓶颈。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">精确的语言条件机器人规划不仅需要完成粗略语义目标，还需满足时空逻辑要求。现有 VLA 模型泛化强但缺乏可解释性，难以遵循编码空间、时间和逻辑要求的精确指令 [1, 2, 3]。虽然近期双系统 VLA 架构分离了 System 2 推理和 System 1 执行，但并未指定如何表示或执行精确约束，导致策略可能满足意图但违反安全或时序条件。现有工作常将 STL 仅视为生成的规范或可行性检查 [28, 29]，而非贯穿控制管道的持久表示。我们需要一种机制，让 System 2 不仅规划，还能将要求形式化为 System 1 可监控和执行的规范，从而解决策略可能满足意图但违反安全或时序条件的问题，实现语言约束的显式化和可执行化。</div><div class="en">—</div><figure><img src="assets/2607.18580/fig1.webp" alt="fig1"><figcaption>Figure 1: A single language instruction can encode temporal (“within 5 to 8 seconds”) and spatial (“8cm left of the pink mug” and “avoiding the stove”) requirements simultaneously. Our framework decomposes the instruction into STL-annotated subtasks, where each stage carries the relevant con- straints as formal specifications that guide execution and monitoring.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">STeP 采用分层架构，System 2 负责任务解释与形式化，System 1 负责执行。System 2 接收语言指令和场景观测，利用 VLM 将任务分解为子任务，并编译为 STL 规范。经过静态检查（Schema、技能库匹配）后，生成可执行序列。System 1 根据子任务特性切换执行器：精确约束用 STL 引导的 MPC，复杂接触行为用学习策略。MPC 优化目标包含 STL 鲁棒性项，以显式优化约束满足。核心创新在于 STL 作为监控信号：计算鲁棒性，若低于阈值触发重规划。历史日志（History Log）记录执行状态和鲁棒性轨迹，供 System 2 在失败时进行 Few-Shot 重规划。这种设计使得语言约束显式化，支持运行时验证与优化，实现了从自然语言到形式化约束再到控制指令的闭环。</div><div class="en">—</div><figure><img src="assets/2607.18580/fig2.webp" alt="fig2"><figcaption>Figure 2: Overview of STEP. System 2 uses the language instruction, current observation, skill library, and history log to decompose the task into subtasks and compile each subtask into an STL specification. System 1 executes the active subtask using the selected low-level policy or controller, while STL monitoring tracks progress and detects failures. Upon subtask completion or violation, the history log provides recall context for System 2 to update the plan while remaining grounded in the original task specification.</figcaption></figure>
+<figure><img src="assets/2607.18580/fig3.webp" alt="fig3"><figcaption>Figure 3: In-depth showcase of key components of our pipeline. a) Depicts how we construct a VLM prompt from a language instruction, along with an observation and system Skill Library. b) Shows the task specification, outlining each subtask, the VLM produces, and how that is compiled into a series of STL formulas. c) A simplified example of an entry in the History Log, showing how STL robustness is an integral part of task monitoring and failure detection.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 UR3e 机械臂的桌面操作平台上评估，涵盖 9 个任务，包括逻辑、空间、时空约束。基线为移除 STL 组件的 VLM-MPC-COST。结果显示，STeP 在所有类别中安全成功率更高，尤其在时序约束上提升显著。在策略切换实验中，STL 监控成功在 29/30 次中检测到碰撞并切换至 MPC 避障。重规划方面，STeP 利用结构化 STL 反馈（违反约束、鲁棒性余量）比基线的标量成本反馈更高效，16 次失败中 12 次在第二次尝试纠正，而基线仅 7 次。证明了形式化规范在恢复中的价值，特别是在堆叠立方体等易失败任务中，STL 反馈能指导 VLM 调整特定参数而非全量重规划。</div><div class="en">—</div><figure><img src="assets/2607.18580/fig4.webp" alt="fig4"><figcaption>Figure 4: Real World Results of our method compared to VLM-MPC-COST. We group the success rates based on the constraint type of the task. There is increased success all across the board from embedding STL, especially in temporal constraints.</figcaption></figure>
+<figure><img src="assets/2607.18580/fig5.webp" alt="fig5"><figcaption>Figure 6: Detailed views of the two modules in STEP. System 2 converts language, scene context, skill definitions, and recall context into an STL-annotated task specification. System 1 executes each subtask through either STL-guided MPC or a learned policy, while STL monitoring provides completion, violation, and recall signals.</figcaption></figure>
+</body></html>

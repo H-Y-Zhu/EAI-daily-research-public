@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>H2RBench: A Real-to-Sim Benchmark for Evaluating Human-to-Robot Transfer</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>H2RBench: A Real-to-Sim Benchmark for Evaluating Human-to-Robot Transfer</h1>
+<p class="meta">Chuyang Xiao, Haotian Zhan, Sriram Krishna, Peilin Meng, Muhammad Zubair Irshad, Sergey Zakharov<br>
+<a href="http://arxiv.org/abs/2609.24778v1">abs</a><a href="https://arxiv.org/pdf/2609.24778v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给混乱的 H2R 领域泼了盆冷水，也递了把尺子。H2R 方法层出不穷，但大家关起门来各练各的，任务、数据量、评估标准全不一样，比试起来就像关公战秦琼。H2RBench 试图用“真实人类视频 + 仿真机器人”的套路统一度量衡，这点值得点赞。不过，别高兴太早，它目前只搞桌面刚性物体，变形体、双手协作一概不管，而且人类视频还得是固定机位，离“野外”还远。最讽刺的是，虽然号称 Real-to-Sim，但仿真里的物理 fidelity 还是得靠人工调摩擦系数，这算哪门子自动化？不过，它证明了仿真能预测真机表现（r=0.89），这算是给后续研究省了真机调试的冤枉钱，算是个实用的“替身演员”。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">当前 H2R 研究面临三大痛点。首先，现有方法评估标准不统一，任务集、场景布局、物体实例甚至机器人监督数据量都不同，导致跨方法比较不可靠 [10, 12, 13]。其次，真实机器人评估成本高、耗时长且难以复现 [2]。第三，虽然仿真提供了可扩展的替代方案，但 H2R 场景下的仿真性能是否能预测真实表现尚未验证。之前的 Sim-to-Real 基准如 SIMPLER [19]、PolaRiS [20] 主要针对纯机器人演示策略，未涉及人类视频监督。RoboTube [7] 虽涉及人类视频，但侧重于奖励学习，未标准化机器人数据预算，无法系统分析人类数据扩展性。因此，亟需一个统一协议，固定机器人数据量，仅变化人类演示量，并验证仿真对真实的预测能力。</div><div class="en">—</div><figure><img src="assets/2609.24778/fig1.webp" alt="fig1"><figcaption>Figure 1: H2RBench overview. We propose a real-to-sim benchmark for evaluating human-to-robot (H2R) policy transfer from real human video demonstrations. H2RBench benchmarks multiple H2R methods across four manipulation tasks, enabling systematic analysis of human-data scaling. More videos are available on our anonymized project website.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">H2RBench 采用三阶段流程。第一阶段是 Real-to-Sim 重建，利用 PolaRiS [20] 框架结合 Marble 生成高质量 3D 网格和高斯泼溅重建，确保仿真场景与真实世界几何一致。第二阶段是数据收集，每个任务包含真实人类视频（第三人称固定视角）和仿真/真实机器人演示（Franka Panda 机械臂）。第三阶段是训练与评估，在 Isaac Lab 仿真器中统一训练协议。基准包含四个任务：Pick-and-Place、Stacking、Insertion、Sequential Manipulation，覆盖不同精度和时长需求。评估了四种代表性 H2R 方法：Phantom 通过图像修复对齐视觉；Point Policy 使用共享 3D 关键点；AMPLIFY 学习潜在动态；GHOST 采用分层子目标。关键设计在于固定机器人演示预算（如 40 或 100 条），仅增加人类演示数量以分析扩展性。评估指标包括多阶段成功率，并额外训练真实世界策略以验证 Sim-vs-Real 相关性。</div><div class="en">—</div><figure><img src="assets/2609.24778/fig2.webp" alt="fig2"><figcaption>Figure 2: Overview of the H2RBench evaluation pipeline. We reconstruct real-world workspaces into Isaac Lab simulation environments and collect task-specific human and robot demonstrations across four manipulation tasks with diverse object placement distributions. Methods are then trained and evaluated in simulation under a shared benchmark protocol for controlled H2R comparison.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在四个任务上进行，对比 Phantom、Point Policy、AMPLIFY、GHOST 四种方法。主要发现三点：1. 人类演示主要提升高层交互行为，精细接触控制仍难（如 Insertion 任务）。2. 不同方法对人类数据扩展性响应差异大，部分方法随数据增加性能饱和。3. 仿真性能与真实表现高度相关（Pearson r=0.89, Spearman ρ=0.85），MMRV 仅 0.06，证明仿真可作为真实评估的有效代理。此外，在物体放置泛化实验中，Point Policy 表现最佳，得益于其统一动作空间。消融分析显示人类演示对早期阶段增益明显，后期接触阶段增益减弱。</div><div class="en">—</div><figure><img src="assets/2609.24778/fig3.webp" alt="fig3"><figcaption>Figure 3: Capability and human transfer impact across H2R methods and tasks. Left: absolute task performance. Right: human transfer impact (log-odds gain)</figcaption></figure>
+<figure><img src="assets/2609.24778/fig4.webp" alt="fig4"><figcaption>Figure 4: Scaling performance with respect to the number of human demonstrations.</figcaption></figure>
+<figure><img src="assets/2609.24778/fig5.webp" alt="fig5"><figcaption>Figure 5: Sim-vs.-Real correlation between simulated and real-world policy performance.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2609.24778/fig6.webp" alt="fig6"><figcaption>Figure 6: Visualization of the task progression for each task. We show representative intermediate states from the initial scene configuration to successful task completion.</figcaption></figure>
+<figure><img src="assets/2609.24778/fig7.webp" alt="fig7"><figcaption>Figure 7: Stage-wise human transfer impact measured as ∆SRs = SRR+H s −SRR s . Positive values indicate that adding human demonstrations improves stage completion, while negative values indi- cate degraded performance.</figcaption></figure>
+<figure><img src="assets/2609.24778/fig8.webp" alt="fig8"><figcaption>Figure 8: Multi-seed human-data scaling performance. Curves show average performance across random seeds as the number of human demonstrations increases, with shaded regions indicating seed-to-seed variation.</figcaption></figure>
+<figure><img src="assets/2609.24778/fig9.webp" alt="fig9"><figcaption>Figure 9: Multi-seed absolute performance comparison across H2R methods and tasks. Hatched bars indicate robot-only training; solid bars indicate robot + maximum human demonstrations. Error bars show standard deviation across random seeds.</figcaption></figure>
+<figure><img src="assets/2609.24778/fig10.webp" alt="fig10"><figcaption>Figure 10: Encoded prototype scores of random selected demonstration from sequential manipula- tion task. Different colors represent different prototypes. For visual clarity, only the prototype with the highest score at each time step is plotted. Up: human demo. Down: robot demo.</figcaption></figure>
+</body></html>

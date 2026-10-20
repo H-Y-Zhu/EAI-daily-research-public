@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DVG-WM: Disentangled Video Generation Enables Efficient Embodied World Model for Robotic Manipulation</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>DVG-WM: Disentangled Video Generation Enables Efficient Embodied World Model for Robotic Manipulation</h1>
+<p class="meta">Ziyu Shan, Zhenyu Wu, Xiaofeng Wang, Zheng Zhu, Ziwei Wang<br>
+<a href="http://arxiv.org/abs/2606.32028v1">abs</a><a href="https://arxiv.org/pdf/2606.32028v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给具身世界模型来了个“瘦身手术”。现在的视频生成模型要么慢得像蜗牛，要么细节糊成马赛克，DVG-WM 试图把“懂物理”和“长得像”拆开干。先低清预览物理交互，再高清修复细节，这思路有点像先画草图再填色。虽然“潜空间退化”听起来有点取巧，甚至可能让模型走捷径，但 3.97 倍加速和真实世界任务成功率翻倍确实香。不过，这种两阶段设计会不会在极端长程任务里崩盘？毕竟草图画歪了，填色也救不回来。总的来说，是效率与质量的平衡术，但别指望它能替代真正的物理引擎，它只是个“看起来像真的”模拟器，适合快速规划而非精密控制。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">具身世界模型的核心痛点在于“既要又要”：既要准确模拟物理动态（如接触、滑动），又要生成高分辨率视频。现有方法如 KeyWorld [24] 和 LongScape [35] 通常将动力学建模与高保真视觉合成耦合在单一生成器中，导致推理速度极慢（需要大量 NFEs）或预测过于粗糙。这种耦合使得模型难以兼顾低层时序推理与高层语义合成，导致在需要快速反应的机器人任务中表现不佳。在真实世界的迭代规划中，模型需频繁查询，这种低效成为瓶颈。DVG-WM 旨在解决这一矛盾，通过解耦动力学学习与视觉合成，在最优分辨率下分别优化，实现高效预览与细节重构，从而支持实时规划。</div><div class="en">—</div><figure><img src="assets/2606.32028/fig1.webp" alt="fig1"><figcaption>Figure 1. Illustration of our DVG-WM. Given the initial observation and a language instruction, DVG-WM first generates a sequence of low-resolution imagined future trajectory to preview the physical interaction, then reconstructs the high-fidelity video with faster inference speed (right). In addition to the improved visual quality, DVG-WM also achieves impressive performance on real-world manipulation tasks.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">DVG-WM 采用两阶段流水线。首先，Preview Stage 基于语言指令和初始帧，利用 LoRA [17] 微调的 CogVideoX-5B [46] 生成低分辨率（LR）视频潜变量，快速捕捉交互动态。其次，Refinement Stage 利用 Flow Matching 直接将 LR 动态映射到高分辨率（HR）视频潜变量，而非从头去噪，仅需 4 步即可恢复细节。Flow Matching 学习向量场 vθ，建立从 LR 到 HR 的直线概率路径，减少计算量。训练时引入 Latent Degradation 机制，对 LR 潜变量进行扰动而非像素级退化，迫使模型重建接触细节而非简单上采样，避免结构模糊。最后，通过 Vision-only Diffusion Policy [10] 作为 Action Expert，将预测视频转化为可执行动作序列。这种设计让动力学和纹理合成各取所需，显著降低计算负载，同时保持物理一致性。</div><div class="en">—</div><figure><img src="assets/2606.32028/fig2.webp" alt="fig2"><figcaption>Figure 2. Pipeline of DVG-WM. The video world model consists of two main stages: 1) a preview stage that learns dynamics and generates low-resolution trajectories conditioned on language instructions and initial frames; 2) a refinement stage that upsamples the latent dynamics to produce high-fidelity video predictions with minimal additional computation. Finally, the inverse dynamics model extracts the action sequence from the predicted video for manipulation tasks.</figcaption></figure>
+<figure><img src="assets/2606.32028/fig3.webp" alt="fig3"><figcaption>Figure 3. Comparison of refinement ap- proaches. (a) Conventional DDPM treating low-resolution latents as conditioning input. (b) DVG-WM uses flow matching to directly map the low-resolution dynamics to high-resolution video latents.</figcaption></figure>
+<figure><img src="assets/2606.32028/fig4.webp" alt="fig4"><figcaption>Figure 4. Comparison of pixel (left) and latent degradation (right) for training the refinement stage. Latent degradation generates contact-rich details in zoomed-in view.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 LIBERO [27] 仿真和真实机器人平台（Galaxea A1, UR7e）上评估。对比基线包括 CogVideoX-5B、LongScape 等。DVG-WM 在视频质量指标（PSNR, FVD）上优于基线，物体级准确率提升至 89%。推理速度达 3.97 倍加速。真实任务中，配合 Action Expert 平均成功率 62.2%，显著高于 CogVideoX 的 34.0%。消融实验证实，Latent Degradation 比 Pixel Degradation 更能恢复接触细节，Flow Matching 比传统条件生成更高效。两阶段缺一不可，仅 Preview 或仅 Refine 效果均大幅下降。Mask-IoU 也显示 DVG-WM 更好地感知了机器人本体区域，验证了其在真实场景中的泛化能力。</div><div class="en">—</div><figure><img src="assets/2606.32028/fig5.webp" alt="fig5"><figcaption>Figure 5. Qualitative comparison of video predictions from DVG-WM and CogVideoX on LIBERO tasks. Red circles highlight wrong critical interaction details of CogVideoX.</figcaption></figure>
+<figure><img src="assets/2606.32028/fig7.webp" alt="fig7"><figcaption>Figure 7. Real-world setup for Galaxea A1 Arm Platform.</figcaption></figure>
+<figure><img src="assets/2606.32028/fig8.webp" alt="fig8"><figcaption>Figure 8. Qualitative results on the real-world manipulation task of placing bread into bowl. DVG-WM generates high-fidelity video predictions that accurately capture the interaction details and follow language instructions for pick-and-place.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2606.32028/fig6.webp" alt="fig6"><figcaption>Figure 6. Comparison with generated videos of preview stage with different LoRA fine-tuning steps. Blue circles highlight the texture of the bowls, while the red circles highlight the contact details between the gripper and the drawer.</figcaption></figure>
+</body></html>

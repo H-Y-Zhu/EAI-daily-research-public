@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Embodiment Gap in Robot Foundation Models</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>The Embodiment Gap in Robot Foundation Models</h1>
+<p class="meta">Yukiyasu Domae, Keisuke Shirai, Hanbit Oh, Ryoichi Nakajo, Tomohiro Motoda, Koshi Makihara<br>
+<a href="http://arxiv.org/abs/2608.18433v1">abs</a><a href="https://arxiv.org/pdf/2608.18433v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文像是一盆冷水，浇在那些只报成功率不报“落地成本”的机器人基础模型（RFM）热潮上。作者团队来自 AIST，他们敏锐地指出：模型能跑通不代表机器人能干活。所谓的“通用性”往往被忽略了最脏最累的“适配工作”。这篇综述没有发明新模型，而是画了一张“体检表”，把 RT-X、OpenVLA 这些大模型按“共享了什么”和“还要干啥”分类。毒舌一点说，很多论文把“调参”和“写脚本”包装成了“泛化能力”，这篇文直接撕开遮羞布，告诉你模型离真机还有多远。不过，它提出的报告框架确实能帮后来人少踩坑，毕竟谁也不想写论文时才发现适配成本比训练还高。它揭示了当前 RFM 在跨本体迁移中，物理接触和控制器响应仍是主要瓶颈，单纯增加数据规模无法消除这些工程鸿沟。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">机器人领域正陷入“规模崇拜”，认为数据越多模型越大就能通吃万物。然而，语言模型可以靠互联网数据 scaling，机器人却受限于物理身体（Goldberg, 2025）。现有工作多关注最终成功率，却忽略了从“共享模型”到“真机执行”之间的巨大鸿沟。比如，SayCan 能规划任务，但具体技能调用依赖目标机器人已有的 API（Ahn et al., 2023）；RT-X 虽整合多源数据，但不同机械臂的接口对齐仍需人工干预（Open X-Embodiment Collaboration et al., 2023）。这种“隐形工程”导致复现困难，且不同系统的实际部署价值不可比。本文旨在厘清哪些知识可复用，哪些必须针对新机器人重新工程化，避免盲目追求模型规模而忽视落地适配。</div><div class="en">—</div><figure><img src="assets/2608.18433/fig1.webp" alt="fig1"><figcaption>Figure 3: Three research directions viewed through the embodiment gap. Sharing semantics and perception broadens the meanings and visual cues available to a robot. Sharing robot data and interfaces makes robot experience easier to reuse and its conditions easier to trace. Learning correspondence across embodiments models relations among different bodies through object motion, abstract actions, morphology, and contact cues. The directions overlap and are not mutually exclusive categories.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心贡献是构建了一个二维定性地图（Figure 2）和三个研究方向。横轴表示“共享结构”距离执行的远近（从语义任务到形态感知），纵轴表示“剩余工作”的阶段（从技能连接到接触力执行）。作者将 21 个代表性系统（如 Octo, UMI/ALoHA, Body Transformer 等）映射到该图中。三个研究方向分别为：1) 共享语义与感知（如 VLA 策略），2) 共享机器人数据与接口（如 RLDS, UMI），3) 跨本体对应学习（如 Morphology-aware）。此外，提出了“具身适配曲线”（EACs, Figure 4）作为报告框架，要求记录达到成功率所需的真实机器人调试工作量（如重校准次数、人工干预），而非仅展示最终指标。这迫使研究者量化“适配成本”，明确模型与真机之间的具体断点。通过这种分类，论文揭示了不同方法在“共享结构”与“执行工作”之间的权衡，指出当前主流 VLA 模型虽能共享语义，但动作空间不匹配仍需大量微调。跨本体对应学习虽试图解决身体差异，但接触力控制仍是未解之谜。</div><div class="en">—</div><figure><img src="assets/2608.18433/fig2.webp" alt="fig2"><figcaption>Figure 4: Embodiment Adaptation Curves (EACs). An EAC shows how performance changes with a reported amount of work on the target robot. The horizontal axis can use demonstrations, real-robot trials, human interventions, or another comparable measure of adaptation effort. Panel (a) gives a conceptual example, while panel (b) reproduces the few-shot transfer results reported for MOTIF (Zhi et al., 2026) in arXiv:2602.13764v1, Table 3. Panel (c) uses the values reported for Track2Act (Bharadhwaj et al., 2024) in arXiv:2405.01527v2 / ECCV 2024, Table 2, and compares open-loop execution with a residual policy trained on 400 target-robot teleoperation trajectories. It is an endpoint illustration related to the EAC idea rather than a quantitative adaptation curve. MG/G/CG/TG denote Mild, Standard</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">本文无传统算法实验，而是对 21 个系统或方法组进行了独立编码分析。三位研究者依据共享结构类型和剩余工作阶段对系统进行分类，横轴一致性达 76.2%，纵轴 47.6%。结果显示，共享结构越接近执行（如动作技能），剩余工作越集中在接触力控制而非接口对齐。例如 OpenVLA 仍需控制器对齐，而 UMI/ALoHA 则面临接触稳定性问题。通过对比不同方法在地图上的分布，发现目前尚无方法完全解决安全与恢复（Safety/Recovery）问题。实验结论揭示了当前 RFM 在跨本体迁移中，物理接触和控制器响应仍是主要瓶颈，单纯增加数据规模无法消除这些工程鸿沟。</div><div class="en">—</div>
+</body></html>

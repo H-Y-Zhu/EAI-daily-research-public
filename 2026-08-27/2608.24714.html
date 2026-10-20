@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GaussianWAM: Distilling Geometry and Semantics from 3D Gaussian Fields into World-Action Models</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>GaussianWAM: Distilling Geometry and Semantics from 3D Gaussian Fields into World-Action Models</h1>
+<p class="meta">Zijian Zhang, Yuqing Jiang, Weitao Zhou, Minglei Li, Jinhao Zhang, Yao Mu<br>
+<a href="http://arxiv.org/abs/2608.24714v1">abs</a><a href="https://arxiv.org/pdf/2608.24714v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">GaussianWAM 是个典型的“训练时开挂，推理时隐身”的 trick。它利用 3D Gaussian 作为临时老师，把几何和语义知识蒸馏进 WAM 的潜空间。虽然推理零开销，但本质还是靠外部模型“喂饭”。对于 FastWAM 这种视频预测模型，它强行注入了 3D 约束，效果确实猛，LIBERO-Plus 直接拉了 19 个点。不过，依赖多视图数据和冻结的 Foundation Model，算不算真正的具身智能进步？还是只是数据增强的高级版？这种训练时增强策略虽然保留了部署效率，但增加了训练阶段的复杂度和显存占用，且高度依赖多视图同步数据，在单目场景下可能失效。总的来说，这是一个在推理效率和性能之间找到的巧妙平衡点，但并未解决 WAM 本质上的 3D 理解缺失问题，更像是一种高效的微调手段。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有的 WAMs 如 FastWAM (Yuan et al., 2026b) 和 Cosmos Policy (Kim et al., 2026) 主要优化视频预测，潜空间缺乏显式的 3D 几何结构。机器人操作需要精确的空间理解，仅靠 RGB 重建无法保证几何可靠性。之前的几何感知方法要么增加推理成本（显式 3D 模型），要么将几何和语义作为独立信号，缺乏统一的空间载体。这导致模型在分布外场景（如视角变化）下表现脆弱。此外，语言指令的条件化并不保证视觉 token 与任务相关物体在空间上对齐。因此，如何将异构的几何和语义知识统一为空间连贯的表示，且不牺牲推理效率，是关键问题。现有工作如 GeoSem-WAM (Ma et al., 2026) 虽引入几何语义，但未统一空间载体，导致监督信号分散。</div><div class="en">—</div><figure><img src="assets/2608.24714/fig1.webp" alt="fig1"><figcaption>Figure 1 Comparison of WAM enhancement paradigms. (a) Conventional WAMs learn world-action representations primarily in 2D video or latent space. (b) Previous geometry- or semantics-aware WAMs introduce dedicated spatial enhancement modules or structured representations into the modeling pipeline. (c) GaussianWAM instead uses a training-time 3D Gaussian teacher to inject geometry-, semantics-, and coverage-aware supervision into the original WAM representations, without modifying the inference backbone.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心是构建一个训练时的 3D Gaussian 教师。首先，利用冻结的 VGGT (Wang et al., 2025) 和 CLIP (Radford et al., 2021) 从多视图观测中提取深度和语义特征，初始化为 3D Gaussian 场。接着，通过可微渲染将高斯场投影回 WAM 的 token 网格，生成语义、深度和覆盖度（alpha）目标，并缓存。然后，在 WAM 末端附加轻量级预测头，将这些缓存的目标蒸馏进当前观测的视觉表示中，损失函数包括语义对齐、深度 L1 和 alpha 覆盖损失。最后，推理时移除所有高斯模块和教师，保留原始 WAM 路径。这种“统一空间载体”确保了异构信号在 3D 坐标下的对齐，避免了独立蒸馏带来的空间不一致。该方法兼容 FastWAM 和 Cosmos Policy 两种架构，通过 MoT 或 DiT 结构将增强表示传递给动作专家。</div><div class="en">—</div><figure><img src="assets/2608.24714/fig2.webp" alt="fig2"><figcaption>Figure 2 Overview of GaussianWAM. (a) A 3D Gaussian teacher is constructed from synchronized multi-view observations and rendered into semantic, depth, and alpha targets, together with a validity mask, which are cached for training. (b) In FastWAM-style dual-expert MoT models, Gaussian supervision is applied to current-observation video representations. (c) In Cosmos-Policy-style unified Transformers, the same supervision is applied to current-observation visual tokens in the shared backbone. (d) Lightweight semantic, depth, and alpha heads distill the cached Gaussian targets into WAM visual representations. All Gaussian-related modules are removed at inference, preserving the original WAM forward path and computational cost.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 LIBERO-Plus 上，FastWAM 从 52.05% 提升至 71.29%，Cosmos Policy 从 71.52% 提升至 77.30%。特别是在相机、光照、噪声等分布偏移下提升显著。RoboTwin 和真实机器人实验验证了迁移能力。消融实验表明，深度、语义和 alpha 监督缺一不可，移除深度监督导致性能下降最大。t-SNE 可视化显示增强后的特征聚类更紧凑。与直接 2D 蒸馏相比，高斯场统一化进一步提升了性能，证明了 3D 空间组织的重要性。真实世界实验中，FastWAM 成功率从 30% 提升至 40%，展示了良好的泛化性。</div><div class="en">—</div><figure><img src="assets/2608.24714/fig3.webp" alt="fig3"><figcaption>Figure 3 Real-world evaluation and success rates. The left panel shows two bimanual tasks under standard, layout, camera, and visual-noise variations. The right panel shows success rates for π0.5, FastWAM, and GaussianWAM under the four settings. Each task uses 100 demonstrations and 20 evaluation trials per setting.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2608.24714/fig4.webp" alt="fig4"><figcaption>Figure 5 t-SNE visualization of final-layer visual- semantic representations. Panels (a) and (c) show the base FastWAM and Cosmos Policy representations, while panels (b) and (d) show their GaussianWAM-enhanced counterparts.</figcaption></figure>
+</body></html>

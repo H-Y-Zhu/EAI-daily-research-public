@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Action-Slot: Structured Action-Centric Representation Learning for Multi-Agent Atomic Activity Understanding</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Action-Slot: Structured Action-Centric Representation Learning for Multi-Agent Atomic Activity Understanding</h1>
+<p class="meta">Yu-Ho Chang, Chi-Hsi Kung, Yi-Hsuan Tsai, Yi-Ting Chen<br>
+<a href="http://arxiv.org/abs/2609.24127v1">abs</a><a href="https://arxiv.org/pdf/2609.24127v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 Slot Attention 换了个马甲，从“找物体”变成了“找动作”。在交通场景里，物体不动不代表没活动，这思路挺对。不过核心还是靠堆数据和强假设，TACO 数据集虽然平衡，但毕竟是 CARLA 生成的，真实世界的复杂性（比如行人乱穿马路）能不能扛得住还存疑。弱监督定位那块搞了个“注意力差分”，算是有点巧思，但本质还是依赖识别模型的质量。总的来说，是个在特定领域（交通原子活动）把现有模块拼得不错的工程，理论突破有限，但实用价值在于统一了识别和定位。它试图解决多智能体并发活动的解耦问题，虽然没完全脱离传统 CV 范式，但在原子活动定义上做了很好的结构化约束。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">交通场景的原子活动理解（Atomic Activity）很难，因为涉及多智能体、多标签且依赖拓扑结构。现有方法要么用 3D Conv/Transformer 聚合全局特征，无法解耦并发活动 [12]–[19]；要么用 Object-centric 方法 [11], [20]–[23]，但这关注物体身份而非拓扑下的活动语义。Slot Attention [26] 虽能分解场景，但它是 permutation-invariant 且针对物体的，直接用在活动上会冲突。作者想解决的是：能否不依赖物体 proposal，直接学习语义结构化的动作中心表示？现有数据集如 OATS [11] 存在类别不平衡且缺乏密集标注，限制了评估。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程是视频输入 -&gt; 特征提取 -&gt; Action-Slot 分解 -&gt; 分类/定位。创新点有三：1) Category-aligned slots：Slot 数量固定等于活动类别数，每个 Slot 绑定一个语义类别，打破 permutation invariance，直接监督分类。2) Parallel updating：不像 SAVi [46] 那样帧间递归更新，而是并行处理整个时空体积，适合全局推理。3) 正则化：引入 Background Slot 吸走无关区域注意力，Negative Slot 强制抑制无活动类别的注意力（全零 mask），利用 softmax 竞争机制。弱监督定位时，用 Inpainting 移除候选区域，计算 Attention Difference 来筛选伪 mask，消除误报。最后用 Mask2Former 架构进行分割。训练目标包含活动分类损失、背景注意力损失和负类正则化损失。这种设计迫使模型关注拓扑相关的运动模式，而非单纯物体外观。</div><div class="en">—</div><figure><img src="assets/2609.24127/fig1.webp" alt="fig1"><figcaption>Fig. 1. Overview of Action-Slot for Multi-Agent Atomic Activity Understanding. (a) A multi-agent traffic scene containing multiple concurrent atomic activities, illustrated by colored trajectories. For example, the red trajectory corresponds to the atomic activity Z1-Z4: C+, representing a group of vehicles turning left along a topologically defined path. (b) Action-Slot decomposes the scene into semantically aligned action slots, each capturing one atomic activity without relying on object proposals. (c) The resulting slot representations enable multi-label atomic activity recognition by predicting whether each atomic activity category is present in the scene. (d) The learned action slots provide spatial grounding signals that enable high-quality pseudo-mask generation for weakly supervis</figcaption></figure>
+<figure><img src="assets/2609.24127/fig2.webp" alt="fig2"><figcaption>Fig. 4. The Overview of the Proposed Pseudo Mask Selection Framework. First, we generate the initial pseudo mask by matching the attention map with nearby object masks. To alleviate the false positive resulting from the diffuse or ambiguous attention map, we inpaint the initial pseudo mask region and identify the important regions from the attention difference before and after inpainting, then re-associate with object masks to generate selected pseudo masks.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">用了 OATS [11], nuScenes [28] 和自建 TACO 数据集。基线包括 I3D [12], X3D [15], SAVi [46] 等。指标是 mAP。在 OATS 和 TACO 上都 SOTA，特别是 TACO 上 mAP 提升明显。消融实验证明 Allocated Slots 和正则化有效。弱监督定位效果优于 MIL 方法。跨域实验显示在 TACO 预训练能提升 nuScenes 表现。TACO 提供了像素级标注，解决了 OATS 缺乏定位标注的问题。实验还展示了注意力图可视化，证明模型确实关注了活动相关区域而非背景。</div><div class="en">—</div><figure><img src="assets/2609.24127/fig3.webp" alt="fig3"><figcaption>Fig. 5. Visualization of attention maps learned on OATS. Colored masks depict the attention of the activity slots Z4-Z3:C and C2-C1:P+. Note that, while MO successfully predicts the activity C2-C1:P+, the corresponding attention scores are very low.</figcaption></figure>
+<figure><img src="assets/2609.24127/fig4.webp" alt="fig4"><figcaption>Fig. 7. Qualitative localization results trained with different pseudo masks. Rows from top to bottom: camera frames, ground-truth masks, predictions without pseudo mask selection, and predictions with pseudo mask selection.</figcaption></figure>
+</body></html>

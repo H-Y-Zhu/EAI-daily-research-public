@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adaptive tactile interaction transfer via digitally embroidered smart gloves</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Adaptive tactile interaction transfer via digitally embroidered smart gloves</h1>
+<p class="meta">Yiyue Luo, Chao Liu, Young Joong Lee, Joseph DelPreto, Kui Wu, Michael Foshey<br>
+<a href="https://www.semanticscholar.org/paper/25afa467b99196db50faf82bc7273e69f3d9e6d6">abs</a><a href="https://www.nature.com/articles/s41467-024-45059-8.pdf">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文把“刺绣”玩出了新高度，用数字刺绣机把传感器和马达织进手套里，听起来很赛博朋克，但实际效果更像“高级版震动反馈手套”。亮点在于自适应算法，能根据用户反应微调震动参数，不用繁琐校准。但槽点也不少：分辨率有限（0.25 cm²），只能传粗粒度压力，精细触觉还是靠边站；而且金属物体可能干扰震动单元，织物耐久性也没详细验证。虽然号称“自适应”，但初始化仍需 15 秒用户数据，对于即时交互场景略显拖沓。总的来说，是触觉交互领域的一次有趣尝试，但离“完美数字触觉”还有距离，更像是一个可定制的硬件平台而非终极解决方案。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">触觉交互在医疗、VR、人机协作中潜力巨大，但现有界面难以兼顾可穿戴性、分辨率和可扩展性 [17, 18]。现有的软体闭环界面虽然展示了潜力，但制造工艺复杂，限制了鲁棒性和定制性。更关键的是，人类对触觉反馈的感知存在个体差异，导致人机通信困难，通常需要繁琐的逐人校准 [10, 11]。此外，高成本、低密度的传感系统难以无缝融入日常生活 [19-22]。本研究旨在解决这些问题，通过数字刺绣实现低成本、可扩展的纺织界面，并结合机器学习自适应优化，消除手动校准需求，实现跨时空的触觉信息传递。</div><div class="en">—</div><figure><img src="assets/25afa467b99196db50faf82bc7273e69f3d9e6d6/fig1.webp" alt="fig1"><figcaption>Fig. 2 | Performance of embroidered vibrotactile haptics and resistive tactile sensors. a Photograph on a typical embroidered magnetic coil showcasing inner and outer radii (rin and rout) and the pitch (p) of neighboring coil winds. b Simulation demonstrating magnetic ﬂux at the cross-section when subjected to a 1 A input current. c Comparison of normalized simulated and experimentally measured magnetic ﬂux from embroidered coils with varying gauge numbers of magnetic wire at different heights. Error bars indicate the standard deviations (SD) across measurements. d Illustration of the characterization setup for a single vibrotactile unit with radius r, with a foam spacer providing base height anchoring</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分为硬件制造与算法优化两部分。硬件上，利用数字刺绣机将压阻传感器和振动马达无缝嵌入纺织品，实现模块化定制。传感器采用压阻层夹在导电纱线电极间，振动单元由线圈和永磁体组成，通过 PWM 控制频率和幅度。算法核心是自适应优化管道，包含前向动力学模型与逆优化过程。前向模型学习用户如何响应震动，输入 H 预测 T。自适应模块通过少量数据提取用户特征向量 z，解决个体差异。逆优化利用梯度下降调整 H，使预测 T 逼近目标 T_target。该管道支持少样本适应，仅需 15 秒数据即可为新用户建模，无需手动校准。系统通过矩阵化布线减少连线，支持多路复用驱动，确保硬件可扩展性与算法灵活性相结合，实现从感知到反馈的闭环控制。</div><div class="en">—</div><figure><img src="assets/25afa467b99196db50faf82bc7273e69f3d9e6d6/fig2.webp" alt="fig2"><figcaption>Fig. 4 | Adaptive transfer of tactile interactions across users. a An overview of human model learning and inverse haptics optimization pipeline. The pipeline incorporates a forward dynamics model with an adaptive module and an inverse optimization procedure. The vibrotactile haptic output is denoted as H, and the tactile response as T. Backward propagation is represented by the red dashed arrows. b Illustration of the forward model featuring an adaptive module. Using our</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验涵盖用户感知、触觉遮挡缓解、技能学习和遥操作。用户感知测试中，10 名受试者对震动定位准确率达 94%。在触觉遮挡实验中，双层手套系统使接触点识别准确率从 5.7% 提升至 88.6%。技能学习方面，钢琴和节奏游戏显示，自适应优化后的触觉指导在复杂任务中显著优于未优化指令，MSE 降低且性能接近单人基线模型。遥操作实验中，无视觉反馈下，提供触觉反馈使软物体抓取变形率从 58% 降至 95% 宽度保持率。消融实验表明，自适应模块使新用户仅需 15 秒数据即可达到接近专用模型的性能。</div><div class="en">—</div><figure><img src="assets/25afa467b99196db50faf82bc7273e69f3d9e6d6/fig3.webp" alt="fig3"><figcaption>Fig. 5 | Transfer of tactile information from robot to human for teleoperation. a Overview of the teleoperation setup, featuring a parallel gripper equipped with tactile sensors (i) and a user wearing a full-sized glove integrated with vibrotactile units on the thumb and index ﬁnger (ii). The visual system tracks embroidered green and red color blocks for distance measurement purposes. b Teleoperated grasping of a hot dog bun, Hawaiian bread, and a soft plastic box without visual feedback and with optional tactile information transferring through haptic feed- back. The plots show the synchronized distance measurement of users&#x27; ﬁnger</figcaption></figure>
+</body></html>

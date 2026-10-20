@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AquaOrbit: Sim-to-Real Reinforcement Learning for Underwater Target Orbiting under Intermittent Visual Feedback</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>AquaOrbit: Sim-to-Real Reinforcement Learning for Underwater Target Orbiting under Intermittent Visual Feedback</h1>
+<p class="meta">Kanzhong Yao, Jinyi Leng, Hao Zhang, Zhe Sun, Xuelong Li<br>
+<a href="http://arxiv.org/abs/2609.24054v1">abs</a><a href="https://arxiv.org/pdf/2609.24054v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇 AquaOrbit 给水下机器人治“失忆症”挺有一套。RL 控制器在视觉丢失时靠“锁存”上一帧姿态硬撑，真机能扛 8 秒遮挡，比 PID 强 46%。但别吹太狠，这恢复逻辑本质是硬编码的参考保持，只是用 RL 奖励引导了策略，算“半传统半学习”。而且离了 AprilTag 可能就不转了，水池实验也太小，离真实海洋差得远。不过作为 Sim-to-Real 的落地案例，确实比纯仿真刷榜的强，至少真机没炸。这种“锁存”机制虽然有效，但限制了策略在遮挡期间的探索能力，更像是一种带奖励的 PID 兜底，缺乏对目标运动趋势的预测，未来若能结合预测模型会更 robust。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">水下目标绕飞（Orbiting）是巡检核心能力，但水下环境太坑。传统视觉伺服（PBVS/IBVS）依赖几何模型，浑浊或目标出视野就瞎 [4]-[6]。虚拟弹性绳能处理部分遮挡，但扩展到 3D 绕飞难 [11]。现有 RL 方法动态控制不错，但对间歇性视觉可见性鲁棒性不足 [14], [15]。一旦目标丢失，控制器要么僵住要么乱飞。本文动机是：能否让策略利用间歇性视觉测量和自身状态，在目标丢失时维持绕飞并恢复跟踪？这需要解决部分可观测问题，且不能依赖外部计算，必须完全 onboard。</div><div class="en">—</div><figure><img src="assets/2609.24054/fig1.webp" alt="fig1"><figcaption>Fig. 1: 3-D orbiting around the target AprilTag with continuous visual fixation on its center. A manual occlusion of up to ∼8 s is introduced from the left.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">流程分三阶段：Isaac Sim 训练、Gazebo 验证、真机部署。策略是三层 MLP，Actor-Critic 架构。观测含视觉位姿、IMU、动作及恢复锁存变量。视觉丢失时，奖励切换为恢复项，惩罚偏离锁存的深度、航向、俯仰和横滚参考，强制保持姿态并尝试重捕。训练用课程学习，从静态到动态再到模拟遮挡。域随机化覆盖传感器噪声、水动力参数和任务几何，确保不泛化。恢复模块非独立切换，而是通过奖励引导策略学习“保持姿态 + 重新搜索”行为，而非简单 PID 回退。这种设计让策略在遮挡期间仍能维持稳定，而非盲目搜索，且通过随机化增强了跨引擎迁移能力。</div><div class="en">—</div><figure><img src="assets/2609.24054/fig2.webp" alt="fig2"><figcaption>Fig. 2: Framework of the AquaOrbit algorithm. Left: the sim-to-real pipeline from parallel training to real-world deployment. Middle: Gazebo simulation and real-world deployment rely on an upper-level target-position estimation module, whereas Isaac Sim training computes the camera-frame target position directly from ground-truth world-frame poses; the dashed box denotes the effective FOV. Right: curriculum learning progressively introduces static, dynamic, and occluded AprilTag targets to enhance robust target tracking.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">分三步。Gazebo 跨引擎测试，对比 PBVS-PID 及其带恢复模块版本。AquaOrbit 静态/移动目标均 20/20 成功，LOS 误差比 PID+Rec 低 46%。移除恢复模块后，移动目标成功率暴跌至 9/20，证明必要性。真机在 5x3x1.8m 水池测试，涵盖椭圆、8 字和 3D 轨道，能处理 8 秒人工遮挡。消融显示历史位移观测和抗抖动项影响平滑性，重置随机化影响泛化。真机结果与仿真接近，但 LOS 误差略大，受池壁碰撞和底部遮挡影响。整体证明了 Sim-to-Real 的有效性，且策略能处理未见过的轨迹类型。</div><div class="en">—</div><figure><img src="assets/2609.24054/fig4.webp" alt="fig4"><figcaption>Fig. 6: Robot three-axis attitude angles and angular velocities over time. Top: the AprilTag is stationary throughout, with only manual occlusions. Bottom: the AprilTag moves during the pink-shaded intervals. twall = 0 denotes the instant of initial target acquisition.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2609.24054/fig3.webp" alt="fig3"><figcaption>Fig. 4: Rows, top to bottom: 3D orbit; 30◦-pitch Figure-8 (water quality was relatively poor here); vertical-plane Ellipse under applied force disturbances; and manually controlled irregular AprilTag motion (multi-directional linear/curved motions and box-shaped attitude oscillations).</figcaption></figure>
+<figure><img src="assets/2609.24054/fig5.webp" alt="fig5"><figcaption>Fig. 7: Left: 3D orbit of the ROV in the target frame; the ROV position is reconstructed by fusing IMU measurements with visual target displacement. Green/pink points denote samples with the AprilTag stationary/moving. Top-right: 3D vector from the camera to the AprilTag, with the dashed box indicating the camera field of view (FOV). Bottom-right: perspective projection of the target center on the image plane.</figcaption></figure>
+</body></html>

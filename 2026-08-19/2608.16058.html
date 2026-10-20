@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SurgVIL: Scaling Surgical Robot Imitation Learning with Open-source Surgical Videos</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>SurgVIL: Scaling Surgical Robot Imitation Learning with Open-source Surgical Videos</h1>
+<p class="meta">Xinhao Chen, JuoTung Chen, Nigel Nelson, Antony Goldenberg, Jesse Haworth, Sean D. Huver<br>
+<a href="http://arxiv.org/abs/2608.16058v1">abs</a><a href="https://arxiv.org/pdf/2608.16058v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇工作试图用“蹭”开源视频来解决手术机器人数据稀缺的痛点，思路挺野。SurgVIL 把准确的假体数据和缺乏动作标签的公开视频结合，用弱监督估算运动学，算是给数据饥渴的模仿学习喂了顿“混合饲料”。虽然解决了泛化问题，但视频估算的动作标签噪声大，属于“有总比没有强”的务实策略。不过，依赖单目视频估算深度和姿态，精度终究不如直接采集，且实验只在单一机器人系统上验证，离真正的临床落地还有距离。此外，虽然声称可扩展，但实际成功率在 OOD 场景仍未饱和，说明弱监督的天花板可能较低。对于 Gr00t-H 这种预训练模型，提升幅度较小，暗示其可能已具备一定泛化能力，而小模型更依赖数据增强。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">手术机器人自主化受限于高质量数据匮乏 [1]。现有数据多来自受控环境下的假体演示，视觉多样性不足，导致策略在真实组织上泛化差 [9]。虽然仿真能生成数据，但存在 Sim-to-Real 鸿沟 [6]。公开手术视频丰富但缺乏同步的机器人运动学标签，无法直接用于策略学习 [10]。此外，基于人类视频的方法存在域差异，而基于机器人视频的方法又缺乏动作标签 [14]。因此，如何低成本利用视觉丰富的公开视频提升策略泛化能力是关键瓶颈，现有工作如 SRT 仍依赖有限的仿真或假体数据 [10]。临床数据收集受监管限制，难以获取大规模同步动作数据，这限制了基于学习的方法的扩展性。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">框架包含双源数据构建与策略训练。首先，构建包含假体演示（准确标签）和开源视频（弱标签）的混合数据集。其次，开发 Video-to-Action 流水线，利用可微渲染框架从单目视频估算工具位姿，损失函数包含 SSIM、Dice 及时间平滑项，并引入深度校准消除系统偏差。针对特定任务如 Needle 任务，还增加了针头姿态的可选输入。最后，Dual-source Policy Training 阶段，将两类数据混合输入 ACT、π0 或 Gr00t-H 骨干网络，通过加权损失平衡准确监督与视觉多样性，缺失的腕部相机视图用 Token 填充，确保输入格式统一。训练时独立采样两个 mini-batch，分别来自假体和视频，共享参数。视频数据经过时间重采样以匹配速度分布，动作数据在归一化前截断异常值。这种方法使得策略既能学习精确动作，又能适应真实组织的视觉变化。</div><div class="en">—</div><figure><img src="assets/2608.16058/fig1.webp" alt="fig1"><figcaption>Figure 1: Overview of SurgVIL. The proposed framework combines accurately labeled in-house dataset collected in phantom settings with visually diverse open-source surgical videos. The trained policies are evaluated on real-tissue surgical tasks to assess generalization beyond the phantom.</figcaption></figure>
+<figure><img src="assets/2608.16058/fig2.webp" alt="fig2"><figcaption>Figure 2: Flow chart for the dataset preparation, dual-source policy training and evaluation</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 Needle Pick-up 和 Cholecystectomy 任务上评估。对比仅用假体数据与混合视频数据。结果显示，加入视频显著提升了在离体组织（ex vivo）和分布外（OOD）场景的成功率，例如 ACT 在猪肝上从 5% 提升至 50%。消融实验表明，单纯增加假体数据量无法达到同等泛化效果，证明视频带来的视觉多样性是关键。基线包括 ACT、π0 和 Gr00t-H，验证了方法对不同架构的通用性。实验在 dVRK-Si 上进行，评估了 20 次独立试验，指标为成功率。对于 Needle 任务，还测试了针头状态输入的影响，发现能进一步提升性能。Chole 任务在正常和异常离体组织上均表现提升，证明方法不仅限于单一任务。</div><div class="en">—</div><figure><img src="assets/2608.16058/fig3.webp" alt="fig3"><figcaption>Figure 3: Experimental Setup. The evaluation was conducted on a dVRK-Si robot system, with an additional wrist camera mounted on the surgical instrument.</figcaption></figure>
+<figure><img src="assets/2608.16058/fig4.webp" alt="fig4"><figcaption>Figure 4: Needle task results on (a) Suture pad, (b) Porcine liver and gallbladder, and (c) Chicken breast with fake blood. The results are also listed as table in the Appendix.</figcaption></figure>
+</body></html>

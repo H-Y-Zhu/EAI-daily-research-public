@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PhyAI: Real-Time Physical AI at the Edge, Scalable Rollouts in the Cloud</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>PhyAI: Real-Time Physical AI at the Edge, Scalable Rollouts in the Cloud</h1>
+<p class="meta">Chenghua Wang, Daliang Xu, Dongqi Cai, Duojin Sun, Hao Zhang, Haoze Qian<br>
+<a href="http://arxiv.org/abs/2608.03682v2">abs</a><a href="https://arxiv.org/pdf/2608.03682v2">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">PhyAI 试图用一套代码通吃具身智能的云端训练、边缘推理和端侧部署，这野心堪比让一个人同时精通微积分和广场舞。它确实做到了在多种模型（如π0、Cosmos3）上实现1.4到4.65倍的加速，甚至让刚发布的MiniCPM-Robot当天就能跑起来，这点值得点赞。但别高兴太早，论文也承认在某些特定配置下，专用运行时（如FlashRT）依然更快，PhyAI追求的是“够用且统一”而非“绝对最快”，这听起来像是为了统一而牺牲了部分极致性能。此外，它提出的Control-time Roofline虽然概念新颖，但本质上只是把推理和环境执行的时间关系画了个图，并没有解决所有延迟敏感场景的痛点。总的来说，这是一个优秀的工程整合方案，但别指望它能解决具身智能中所有“慢”的问题，毕竟硬件物理极限摆在那里。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">具身智能（Embodied AI）模型的全生命周期涉及离线评估、云端强化学习（RL） rollout、边缘服务和本地部署。虽然这些场景使用相同的模型检查点和动作语义，但现有系统往往依赖独立的推理程序（如FlashRT、vla.cpp、realtime-vla等），导致每个路径都需要单独优化和验证，行为无法自动迁移（Su, 2026; Nguyen et al., 2026; Ma et al., 2025）。LeRobot虽然提供了异步策略推理栈，但缺乏内核级的多架构执行引擎（Cadene et al., 2026）。现有的LLM推理系统（如vLLM、SGLang）无法直接复用多模态条件、迭代动作求解器或分类器无引导（CFG）分支。这种割裂导致开发效率低下，且难以在云端和边缘端之间保持一致性。PhyAI旨在解决这一痛点，提供一个统一的推理运行时，既能保持模型语义，又能针对不同架构和部署环境选择执行策略。</div><div class="en">—</div><figure><img src="assets/2608.03682/fig1.webp" alt="fig1"><figcaption>Figure 1. Single-request latency across six embodied policies. (a), 𝜋0. (b), 𝜋0.5. (c), Cosmos3-Nano-Policy-DROID. (d), GR00T N1.7. (e), MiniCPM-Robot. (f), MiniCPM-Track. Brackets give PhyAI speedup over the official path on matched hardware; lower is better. Hatched bars mark explicit FP8 results, and crosses mark unavailable measurements. MiniCPM-Robot uses LIBERO with two 224 × 224 views; Cosmos3 uses eight H20 GPUs with CFG=2 and TP=4; MiniCPM-Track is measured on Orin NX.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">PhyAI采用分层架构，核心在于将模型特定逻辑（Model Adapters）与共享执行服务（Runtime）分离。模型适配器负责处理架构特定的条件、求解器状态、缓存和动作转换，而运行时则管理图执行、内核、内存管理和并行服务。整体流程如下：调度器（Scheduler）根据配置（DP/TP/CFG）分配请求给模型运行器（Model Runner）；运行器管理状态（如KV缓存、CUDA Graph）并调用无状态的建模模块（Modeling Modules）；底层通过Layers接口选择最优内核。创新点包括：1. 统一运行时：支持VLA和WAM模型在单卡或多卡、边缘和云端无缝切换，如MiniCPM-Robot发布当天即可集成。2. 优化技术：采用算子融合（如AdaRMSNorm）、CUDA Graph重放（复用固定前缀状态）和基于配置的算子选择（Profiled operator selection），显著提升小批量下的吞吐量。3. 并行策略：支持数据并行（DP）、张量并行（TP）和CFG并行，例如Cosmos3在8卡上通过TP+CFG组合实现高效推理。4. Control-time Roofline：引入该分析框架，区分推理受限（inference-bound）和环境受限（environment-bound）场景，指导系统优化方向。</div><div class="en">—</div><figure><img src="assets/2608.03682/fig3.webp" alt="fig3"><figcaption>Figure 3. Layered PhyAI architecture and component ownership.</figcaption></figure>
+<figure><img src="assets/2608.03682/fig4.webp" alt="fig4"><figcaption>Figure 4. Eight-GPU Cosmos3 execution with two CFG branches, TP4 within each branch, and optional tiled video decoding.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在多种硬件（Thor, RTX 5090, A40, H100, H20×8）和模型（π0, π0.5, GR00T N1.7, MiniCPM-Robot, Cosmos3）上进行。主要指标为单请求延迟和吞吐量。结果显示，PhyAI在所有11个对比对中均优于官方实现，加速比达1.40×至4.65×。例如，在8卡H20上运行Cosmos3-Nano-Policy-DROID，延迟从2.46s降至1.18s（2.08×加速）。批处理分析表明，π0.5在Batch 32时吞吐量达100 samples/s，而Cosmos3受生成阶段主导，批量扩展收益有限（仅14.3%）。Control-time Roofline分析揭示π0.5在LIBERO任务中受环境限制，而Cosmos3仍受推理限制。此外，模拟RL rollout显示，使用PhyAI作为后端可将推理时间占比从53.1%降至36.2%，提升训练吞吐量约1.36×。</div><div class="en">—</div><figure><img src="assets/2608.03682/fig2.webp" alt="fig2"><figcaption>Figure 2. Control-time Roofline and RTC schedules. (a), Mean control rates for OpenPI and PhyAI on four LIBERO suites. (b), Schematic timing of synchronous serving and RTC across two action chunks.</figcaption></figure>
+<figure><img src="assets/2608.03682/fig5.webp" alt="fig5"><figcaption>Figure 5. PI0.5 BF16 batch scaling with CUDA Graphs. (a), Action-chunk throughput. (b), Mean full-batch latency; shading marks the Thor batch-four range. (c), GPU-time share by phase.</figcaption></figure>
+<figure><img src="assets/2608.03682/fig6.webp" alt="fig6"><figcaption>Figure 6. GR00T-N1.7 BF16 batch profile on RTX 5090. (a), Mean and P99 end-to-end latency. (b), Throughput and per-sample latency. (c), GPU-time share for Prepare, Backbone, and Action Head. (d), Phase MFU relative to the measured BF16 peak. Each batch uses eight warm-up iterations, followed by 30 timed iterations for end-to-end latency and 10 CUDA Event windows for phase measurements.</figcaption></figure>
+<figure><img src="assets/2608.03682/fig7.webp" alt="fig7"><figcaption>Figure 7. Cosmos3 BF16 batch profile. (a), Action-chunk throughput. (b), Per-sample latency. (c), GPU-time share by phase. (d), Generation MFU and allocated memory. Panels (a) and (b) use broken axes; RTX 5090 ran out of memory.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2608.03682/fig8.webp" alt="fig8"><figcaption>Figure 8. BF16 Rooflines for PI0.5 and Cosmos3 using logical arithmetic intensity on a Hopper-series GPU and Thor.</figcaption></figure>
+<figure><img src="assets/2608.03682/fig9.webp" alt="fig9"><figcaption>Figure 9. Timeline of one stable RL step on four A800 80 GB GPUs.</figcaption></figure>
+</body></html>

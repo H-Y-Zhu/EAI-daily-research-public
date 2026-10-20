@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decoding Task Progress from VLA Representations</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Decoding Task Progress from VLA Representations</h1>
+<p class="meta">Atiksh Bhardwaj, Edward Weiyi Duan, Prithwish Dan, Wei-Chiu Ma, Preston Culbertson<br>
+<a href="http://arxiv.org/abs/2608.13474v1">abs</a><a href="https://arxiv.org/pdf/2608.13474v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 VLA 模型开了个“进度条”窗口，挺有意思。作者发现 π0.5 的残差流里藏着任务进度信息，线性探针就能读出来，甚至预训练阶段就有。但这进度条只能看不能改，注入信号没法操控策略，算是“看得见摸不着”。不过作为无监督 OOD 检测器，它比那些要标签的基线还稳，这点很实用。缺点是只测了仿真，真实世界能不能扛得住还得打个问号，而且把时间当进度有点偷懒，语义完成度没真测。总的来说，给黑盒加了个监控探头，虽然不能当方向盘，但能当刹车，适合部署前的安全网。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">VLA 部署后容易静默失败，缺乏监控工具 [3, 4]。现有可解释性工作多关注模型“知道什么世界知识”，而非“任务进行到哪步” [12, 16]。任务进度是序列决策的基础信号，但 VLAs 内部是否编码了它尚不清楚。若无法监测内部状态，就难以判断何时该介入或停止。本文旨在填补这一空白，利用机制可解释性工具，验证进度信号是否存在且可用于运行时监控，解决 VLA 泛化失效时的可观测性问题，为黑盒模型提供轻量级诊断手段。</div><div class="en">—</div><figure><img src="assets/2608.13474/fig1.webp" alt="fig1"><figcaption>Figure 1: Task progress is linearly readable from π0.5’s internal activations. A linear probe φ(z0) = w⊤z0+b on residual-stream activations z0 from the VLM backbone recovers task progress, the normalized fraction of the trajectory remaining, and supports three downstream analyses: OOD detection, a language-grounding diagnostic, and a steerability study.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分三步：提取嵌入、训练探针、下游应用。首先从 π0.5 的 Transformer 层提取残差流激活 z_i，定义任务进度 τ 为归一化剩余时间。接着训练线性探针 φ(z)=w^T z+b，定义弱解码（分布内预测）、强解码（反事实输入下泛化）和可操控性（注入激活是否改变动作）。最后利用进度停滞作为 OOD 信号。创新点在于形式化了这三个可解释性概念，并证明进度信号虽可观测但不可控，同时构建了无需 OOD 标签的监测器。具体而言，通过对比原始指令与反事实指令的激活差异，验证探针是否真正理解语言指令而非仅依赖视觉。</div><div class="en">—</div><figure><img src="assets/2608.13474/fig2.webp" alt="fig2"><figcaption>Figure 2: Left: Weak decodability of the progress feature across layers of fine-tuned π0.5 (SigLIP, PaliGemma’s Gemma, and the action expert). Right: Probe performance vs. capacity on the first Gemma layer, true labels versus shuffled labels</figcaption></figure>
+<figure><img src="assets/2608.13474/fig4.webp" alt="fig4"><figcaption>Figure 5: Left: Predicted progress across Gemma layers i = 0, . . . , 17 after injecting τboost = 0.2 at layer 0 via φ0, read at each subsequent layer by φi. Right: ∥Ainj −AGT∥2 compared against the non-injected baseline ∥Apolicy −AGT∥2, with 95% confidence interval (CI) over 5 rollouts run 5 times each. A successful injection would bring the injected curve close to the policy baseline.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 VLABench 上用 π0.5 测试。基线包括 Mahalanobis、VAE、SAFE。指标看 R2 和 AUROC。发现进度信号在 Gemma 层可解码，预训练后更强。反事实实验显示需对比训练才能感知语言变化。操控实验证明注入无效。OOD 检测中，Vτ 在无标签情况下 AUROC 达 0.85+，优于部分有监督基线，且跨任务泛化好。消融显示嵌入比原始观测更鲁棒。</div><div class="en">—</div><figure><img src="assets/2608.13474/fig3.webp" alt="fig3"><figcaption>Figure 4: Counterfactual training yields strong decodability at a cost. Progress traces under the original instruction (blue) and Tlang noun-swap (orange). Left: naive layer-0 probe. Right: contrastive probe at layer 10, trained with Tlang counterfactuals labeled τ = 1.0. Bands: 95% CI over 75 rollouts.</figcaption></figure>
+<figure><img src="assets/2608.13474/fig5.webp" alt="fig5"><figcaption>Figure 7: The progress probe’s generalization across tasks improves with the number of training tasks. Out-of-distribution R2 of progress probes evaluated on the unseen tasks as a function of the number of training tasks k. Left: distribution of OOD R2 across all combinations of k tasks (box plots), with the best combination (orange triangle) and the R2 = 0 baseline (red dashed) marked. Right: mean across combinations (blue, 95% CI) and the best combination (orange dashed) at each k. The best attainable R2 rises from ≈0.39 at k = 1 to ≈0.85 by k = 8 before saturating, while the mean improves early and then plateaus with growing variance.</figcaption></figure>
+<figure><img src="assets/2608.13474/fig6.webp" alt="fig6"><figcaption>Figure 8: Language sensitivity ∆(left) and in-distribution progress R2 (right) for the contrastive probe at each layer. Lines are the mean over 5 seeds, bands ±1 SEM.</figcaption></figure>
+<figure><img src="assets/2608.13474/fig7.webp" alt="fig7"><figcaption>Figure 9: Task progress is decodable from VLA embeddings but not from raw observations. Predicted vs. ground truth task progress τ over normalized episode time t/T for a probe trained on π0.5 embeddings (left) and a matching probe trained on raw observations (right). Both probes are trained on 50 Add Condiment episodes and evaluated on 100 out-of-distribution Add Condiment episodes. The embedding probe tracks ground truth (mean R2 = 0.807), while the probe on raw observations fails to generalize (mean R2 = −2627.7, MAE = 11.97).</figcaption></figure>
+</body></html>

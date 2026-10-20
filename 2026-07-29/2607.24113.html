@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A Case Study on the Acceptance of a Humanoid Robotic Head Employed in Three Public Spaces</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>A Case Study on the Acceptance of a Humanoid Robotic Head Employed in Three Public Spaces</h1>
+<p class="meta">Marcel Heisler, Luca Randecker, Christian Becker-Asano<br>
+<a href="http://arxiv.org/abs/2607.24113v1">abs</a><a href="https://arxiv.org/pdf/2607.24113v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文把“头”当成了主角，在三个公共场所测试了 Kim 机器人的接受度。亮点在于技术栈堆得挺满：Whisper 听、GPT 说、WASABI 演情绪、FaceXHubert 对口型，试图打造一个“有灵魂”的对话头。但槽点也不少：样本量 49 人就想做统计推断，这统计效力（statistical power）怕是连 p 值都救不回来。虽然 TAM2 问卷显示大家觉得“有用”，但每五个用户就有一个嫌反应慢，这延迟在实时交互里简直是“社死”现场。另外，图书馆和旅游局接受度高，政府大楼却低，说明场景匹配比技术堆料更重要。总之，这是一个典型的“技术可行但体验待打磨”的现场实验，适合给 Embodied AI 的交互延迟优化提供反面教材。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">人形机器人能否融入日常生活，关键在于人类接受度，而这受环境、任务能力及文化规范影响 [1], [2]。现有研究多集中在单一场景或全身机器人，缺乏对 android 机器人在不同公共空间接受度的对比分析 [17]。特别是，此前没有研究使用经过验证的 Technology Acceptance Model Version 2 (TAM2) 问卷来测量和比较 android 机器人在多个真实世界设置中的接受度 [16]。本研究旨在填补这一空白，通过 Kim 机器人在游客信息中心、建筑管理局和城市图书馆的实地部署，探究环境背景如何影响用户对具身对话代理的感知有用性、易用性及使用意愿。这有助于理解在公共服务场景中，技术接受度模型是否普适，以及场景适配性对 HRI 的关键作用。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体交互 Pipeline 分为感知、决策与执行三阶段。感知层通过前置麦克风采集语音，后置摄像头利用 PoseNet 追踪人脸进行眼神交互。决策层核心是 OpenAI GPT-4.1 助手，结合 Retrieval Augmented Generation (RAG) 注入地点特定信息（如开放时间、法律条文），并调用 WASABI 模块计算情绪效价（valence），生成包含情感状态的文本回复。执行层采用 XTTS 模型进行多语言语音合成，FaceXHubert 生成口型同步动画，14 个气动执行器驱动面部表情。创新点在于将大语言模型与情绪模拟后端深度耦合，且针对不同地点定制了 System Prompt，使机器人能根据上下文（如旅游局 vs 政府大楼）调整回复策略。此外，软件框架运行在 Nvidia Jetson Orin 上，通过 RS-485 控制面部动作，实现了从语音输入到多模态输出的闭环。</div><div class="en">—</div><figure><img src="assets/2607.24113/fig1.webp" alt="fig1"><figcaption>Fig. 1. While the microphone in front of the robot is turned on, the robot head Kim performs a “listening” animation. Then, OpenAI’s Whisper speech-to- text model is used to transcribe “request audio” into text. The resulting text is sent to an OpenAI ChatGPT 4.1 assistant, which uses Retrieval Augmented Generation (RAG) together with a location-specific system prompt to generate a textual answer. The text-to-speech software XTTS transforms the text into a “response audio”, which is used by FaceXHubert to encode a lip-sync animation of the robot’s face. Finally, the animation is played back together with the audio. The video stream provided by the camera behind the robot’s head is analyzed for the presence of human faces, of which the closest is selected as an eye gaze target, whenever Kim</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在斯图加特三个公共场所进行，共收集 49 份有效问卷（旅游局 19，建筑局 7，图书馆 23）。采用 TAM2 问卷测量使用意图（ITU）、感知有用性（PU）和感知易用性（PEOU），以及情绪感知问题。统计上使用 Shapiro-Wilk 检验正态性，非正态数据采用 Kruskal-Wallis 检验。结果显示，各地点中位数均大于 4，表明用户整体持积极态度，但地点间无统计学显著差异（p &gt; 0.05）。多语言支持被广泛认可（涉及 17 种语言），但 20% 用户反馈响应时间过慢。有趣的是，建筑管理局的接受度描述性统计较低，符合公共服务场景的接受度规律。</div><div class="en">—</div><figure><img src="assets/2607.24113/fig2.webp" alt="fig2"><figcaption>Fig. 2. Robot head Kim at the tourist information in Stuttgart, Germany, available from May 26 to 30, 2025.</figcaption></figure>
+<figure><img src="assets/2607.24113/fig4.webp" alt="fig4"><figcaption>Fig. 6. Box plot showing the distribution of perceived usefulness (PU) by location with indicated median values.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2607.24113/fig3.webp" alt="fig3"><figcaption>Fig. 4. Robot head Kim at the city library in Stuttgart, Germany, available from June 10 to 14, 2025.</figcaption></figure>
+</body></html>

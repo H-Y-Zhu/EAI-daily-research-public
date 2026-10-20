@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>From Traces to Agentic Worlds: Agentic Language World Models for Interactive Environment Simulation</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>From Traces to Agentic Worlds: Agentic Language World Models for Interactive Environment Simulation</h1>
+<p class="meta">Quanyu Long, Xiao Chen, Jianda Chen, Haozhen Zhang, Qisheng Hu, Jianzhu Bao<br>
+<a href="http://arxiv.org/abs/2610.06100v1">abs</a><a href="https://arxiv.org/pdf/2610.06100v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这个工作把“世界模型”玩出了新花样，不再死磕重建可执行代码，而是搞了个“世界书”（Worldbook）。说白了，就是让LLM当环境，但给它一本从历史轨迹里扒出来的“小抄”。这招挺聪明，省了逆向工程的苦，但本质上还是LLM在猜，不是真代码。虽然号称“无学习框架”，但构建世界书本身还得靠大模型，算不算“用大模型模拟大模型”？长期一致性提升明显，但 fidelity 终究受限于轨迹质量，有点“巧妇难为无米之炊”的意思。不过，它确实解决了长程状态丢失的痛点，让模拟环境能像真的一样“记住”之前的操作后果，比单纯 Prompt 强多了，算是给 Agent 训练省了笔大钱。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">训练 Agent 需要真实环境，但很多系统代码不可得。现有语言世界模型（LWMs）（Li et al., 2026）通常把历史和环境描述扁平化塞进 Prompt，导致长程状态丢失，比如删了文件后面再查会报错，但 Prompt 里可能没体现。Terminal-Universe（Wu et al., 2026）试图从轨迹重建可执行终端，但复杂环境往往缺少实现细节，轨迹无法完全还原系统依赖。我们需要一种不依赖原系统代码，仅凭交互轨迹就能恢复环境行为规范的方法，让模拟环境能像真的一样“记住”之前的操作后果，支持多轮交互而不崩塌，避免 Agent 在幻觉中自嗨。</div><div class="en">—</div><figure><img src="assets/2610.06100/fig1.webp" alt="fig1"><figcaption>Figure 1 | From interaction traces to an agent-operated simulated environment. Trace2Env reconstructs traces into a reusable environment worldbook containing schemas, grounded evidence, and induced behavioral knowledge. During simulation, a task agent supplies actions, while a world model agent actively consults the worldbook together with the current episode state and episodic memory to infer their consequences and predict the resulting observations.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">Trace2Env 分离线和在线两阶段。离线时，从历史轨迹构建“世界书”，包含 Schema（动作接口）、Grounded Evidence（具体观测）和 Induced Abstractions（归纳规则）。在线模拟时，世界模型 Agent 主动查询世界书，结合当前 Episode 状态和记忆，提出状态变更和观测。关键创新在于分离了“通用环境知识”（世界书，不可变）和“当前回合状态”（可变）。引入 Applicability Gate 判断检索证据是否适用，Validation Gate 确保状态变更符合 Schema 约束。这种架构让模拟环境能跨回合保持状态一致性，而不是每次只预测下一个观测，实现了状态与知识的解耦。此外，Harness 负责验证提议，确保状态更新合法，只有被接受的状态变更才会提交，保证了模拟的严谨性。这种设计允许同一个世界书支持多个模拟回合，同时每个回合保留自己的交互历史后果，避免了传统 Prompt 方法中状态被覆盖的问题，让模拟更像真人在玩。</div><div class="en">—</div><figure><img src="assets/2610.06100/fig2.webp" alt="fig2"><figcaption>Figure 2 | Trace2Env framework. Trace2Env reconstructs historical traces into an environment worldbook and uses a world model agent to operate it as a stateful simulated environment.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 Terminal、SWE、Android 等 9 个环境测试。指标包括 AgentWorldBench 的五维评分（格式、事实性等）和长程交互一致性（W2R/Real）。结果显示 Trace2Env 在各项指标上均优于 Direct Prompting 和 Trace RAG。特别是在 ALFWorld 中，W2R 从 0.032 提升至 0.914，说明模拟动作在真实环境回放时更可靠。消融实验表明，世界书中的证据和抽象规则互补，增加构建轨迹数量能提升预测质量，但成本也随之增加。平均分从 69.51 提升到 75.94，证明了世界书加运行时机制的有效性。此外，在未见任务上也有显著增益，说明泛化能力不错，但构建成本随轨迹数线性增长，实际部署需权衡。</div><div class="en">—</div><figure><img src="assets/2610.06100/fig3.webp" alt="fig3"><figcaption>Figure 3 | Trace scaling on Terminal. Next-observation prediction score and one-time worldbook construction cost as the number of construction traces increases.</figcaption></figure>
+<figure><img src="assets/2610.06100/fig4.webp" alt="fig4"><figcaption>Figure 4 | The task agent generates an unsupported put action. Direct Prompting hallucinates a successful placement, causing a false state transition and a simulated success that fails under real-environment replay. Trace2Env not only predicts the correct no-op, but also uses its worldbook and persistent state tracking to preserve the inventory state and support subsequent interaction, enabling recovery with the valid move command.</figcaption></figure>
+</body></html>

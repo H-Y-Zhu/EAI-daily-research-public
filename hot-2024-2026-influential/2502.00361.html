@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Efficient Online Reinforcement Learning for Diffusion Policy</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Efficient Online Reinforcement Learning for Diffusion Policy</h1>
+<p class="meta">Hai-Tong Ma, Tianyi Chen, Kai Wang, Na Li, Bo Dai<br>
+<a href="https://arxiv.org/abs/2502.00361">abs</a><a href="https://arxiv.org/pdf/2502.00361">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给在线强化学习（Online RL）里的扩散策略（Diffusion Policy）做了一次‘去魅’手术。过去大家觉得扩散模型在模仿学习和离线RL里表现神勇，一到在线RL就‘水土不服’，要么算不动，要么采样难。作者没整那些花里胡哨的，直接搞了个‘重加权分数匹配’（RSM），把扩散模型从‘必须采样自目标分布’的枷锁里解放出来。结果确实惊艳，在MuJoCo上把SAC都按在地上摩擦，Humanoid和Ant任务提升超过120%，简直是给传统高斯策略上了一课。不过，这方法虽然理论优雅，但实际落地时，扩散模型固有的采样慢和训练不稳定性依然是悬在头顶的达摩克利斯之剑，论文里虽然提了用批量采样和Logsumexp trick来缓解，但真要在高维连续控制里跑满，稳定性恐怕还得靠运气。总的来说，这是一次理论到实践的漂亮突围，但别指望它能立刻取代所有传统RL算法，毕竟‘快’才是RL的硬道理。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">扩散策略凭借强大的表达能力和多模态特性，在模仿学习和离线RL中表现优异，但在在线RL中却面临两大死结。首先，传统的去噪分数匹配（Denoising Score Matching, DSM）需要采样自目标分布，而在在线RL中，最优策略是未知的，无法直接采样，导致DSM不可行。其次，若试图通过反向扩散过程反向传播策略梯度（如Wang et al., 2024），计算成本极高且极不稳定，难以扩展。现有尝试如QSM (Psenka et al., 2023) 通过微分Q函数获取分数，但分数估计不准；QVPO (Ding et al., 2024a) 无法处理负Q值；DACER (Wang et al., 2024) 则因递归梯度导致梯度不稳定。这些方法要么有偏差，要么计算昂贵，限制了扩散策略在在线RL中的潜力。本文旨在解决这一核心矛盾，提出一种无需采样自目标分布且计算高效的训练方法。</div><div class="en">—</div><figure><img src="assets/2502.00361/fig1.webp" alt="fig1"><figcaption>Figure 1. Diffusion model aims to match score network sθ(xt, t) with noise-perturbed score function ∇xt log pt(xt) by minimizing the expectation of error L2-norm ∥sθ(xt, t) −∇xt log pt(xt)∥2 over distribution pt. RSM generalize to other weight function gt to enable diffusion policy training in online RL.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">本文核心提出重加权分数匹配（Reweighted Score Matching, RSM），将扩散模型视为噪声扰动的能量基模型（EBMs）。整体流程是：利用Q函数作为能量函数，通过重加权DSM损失，将训练目标从匹配噪声扰动分布的分数，转化为匹配由Q函数导出的目标策略分数，从而绕过采样难题。具体分为两步：1. 理论推导：证明DSM损失可以通过引入权重函数g(at; s)进行重加权，且最优解不变。2. 算法实例化：针对两种常见的策略优化问题，设计了两种具体算法。对于策略镜像下降（Policy Mirror Descent），定义权重gMD，推导出可计算的损失L_DPMD，利用当前策略π_old采样，结合Q值作为权重，训练扩散模型逼近镜像下降策略。对于最大熵策略（Max-Entropy Policy），定义权重gMaxEnt，利用反向采样技巧（Reverse Sampling Trick），从自定义分布ht采样，结合Q值权重，推导出损失L_SDAC，训练扩散模型逼近最大熵策略。3. 工程优化：为了解决数值爆炸和探索利用平衡，引入了Q值归一化、Logsumexp技巧以及批量动作采样（Batch Action Sampling）策略。最终得到DPMD和SDAC两个算法，它们仅需Q函数作为能量信息，无需采样自目标策略，且计算复杂度与标准DSM相当。</div><div class="en">—</div><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在OpenAI Gym MuJoCo v4的10个任务上进行，对比了经典RL基线（PPO, TD3, SAC）和最新的扩散策略在线RL基线（QSM, QVPO, DACER, DIPO, DPPO）。结果显示，DPMD和SDAC在绝大多数任务上超越了所有基线。特别是在复杂运动任务中，DPMD在Humanoid和Ant上相比SAC提升了超过120%和100%，在HalfCheetah和Walker2d上也有显著提升。消融实验表明，扩散步数（10-20步）和噪声调度（cosine/linear）对性能影响较小，模型具有鲁棒性。此外，计算效率方面，DPMD和SDAC的显存占用和训练时间显著低于DACER和DPPO等递归梯度方法，接近QSM的水平。值得注意的是，QSM在InvertedDoublePendulum上失败，QVPO在Reacher和Pusher上表现不佳，而本文方法保持了稳定的高性能。</div><div class="en">—</div><figure><img src="assets/2502.00361/fig2.webp" alt="fig2"><figcaption>Figure 2. The scatter plots of generating 2D Gaussian mixture, the histograms show the partition on each axis. Figure 2(a) shows the true data samples with mixing coefficients [0.8, 0.2]. Figures 2(b) to 2(d) show that the proposed reweighted score matching and denoising score matching can approximately recover the true data distribution. Figure 2(e) shows the slow mixing of Langevin dynamics that the mixing coefficients can not be correctly recovered.</figcaption></figure>
+<figure><img src="assets/2502.00361/fig3.webp" alt="fig3"><figcaption>Figure 3. Average return over 20 evaluation episodes every 25k iterations (125k for Humanoid) during training. We select the top 5 baselines ranked by average performance over all tasks for clarity. The error bars are standard deviations over 5 random seeds.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2502.00361/fig4.webp" alt="fig4"><figcaption>Figure 5. Results to Fit Two Moon distribution, a commonly used Boltzmann sampler benchmark. We compare RSM, DDPM, iDEM, and FAB. RSM, DDPM, and iDEM all recover two separate modes, while FAB shows connections between the two modes.</figcaption></figure>
+</body></html>

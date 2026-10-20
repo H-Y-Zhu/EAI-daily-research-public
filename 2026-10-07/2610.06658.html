@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Talk Like You: Imitating How You Speak in Real-Time Talking Head Generation</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Talk Like You: Imitating How You Speak in Real-Time Talking Head Generation</h1>
+<p class="meta">Baiqin Wang, Zhixing Ding, Jijie Li, Jiankuo Zhao, Zhen Lei, Xiangyu Zhu<br>
+<a href="http://arxiv.org/abs/2610.06658v1">abs</a><a href="https://arxiv.org/pdf/2610.06658v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇 TalkLikeYou 试图给数字人加点“个人特色”，解决现有 Talking Head 生成“千人一面”的尴尬。作者提出在运动空间建模说话习惯，用 Flow Matching 实现单步推理，效率确实亮眼。但所谓的“习惯”主要局限于唇部细微形变，离真正的个性化表达（如情绪、节奏）还有差距。PLAD 指标虽然新颖，但本质是统计分布对比，对主观感知的影响存疑。整体而言，这是一次在现有 Diffusion 架构上的精细化修补，虽未颠覆范式，但在实时性和习惯模仿上提供了新视角，适合对效率敏感的应用场景。此外，该方法依赖参考视频或预设码，若参考视频质量不佳，习惯模仿效果可能打折。对于追求极致拟真的数字人来说，这点“习惯”差异可能不如表情丰富度重要。不过作为实时生成框架，效率确实能打，32FPS 在移动端部署有潜力。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有音频驱动 Talking Head 方法如 SadTalker (Zhang et al., 2023), Sonic (Ji et al., 2025) 等，虽在唇形同步和视觉保真度上表现优异，却普遍忽略了用户特定的说话习惯。这些习惯体现为细微且一致的唇部运动模式（如“bus”的张嘴幅度），是身份感知的关键。现有方法多依赖图像空间扩散，学习数据集的平均运动模式，导致生成结果缺乏多样性。MimicTalk (Ye et al., 2024) 虽尝试个性化，但需针对个体训练，泛化能力受限。PC-Talk (Wang et al., 2025b) 虽能生成风格化结果，但存在时间抖动。本文旨在解决这一痛点，实现无需重新训练即可模仿目标人物说话习惯的实时生成，填补了习惯感知生成的空白。</div><div class="en">—</div><figure><img src="assets/2610.06658/fig1.webp" alt="fig1"><figcaption>Figure 1: Overview of TalkLikeYou. Previous methods often generate uniform motions with lim- ited control over speaking habits. We propose TalkLikeYou for efficient habit imitation in talking head generation, together with a new metric PLAD to evaluate habit similarity and diversity.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程为：运动提取 -&gt; Flow Matching 生成 -&gt; 渲染。核心创新在于运动空间生成，采用 DiT 骨干网络。训练分两阶段：第一阶段用 One-hot 码在 HDTF 上建立基础习惯空间；第二阶段用 CelebV-HQ 参考视频对齐特征，并周期性混合 One-hot 码以增强泛化。Flow Matching 采用重参数化预测干净运动 $x_0$ 而非速度场，支持单步采样。引入一阶和二阶时间导数损失约束帧间动态。PLAD 指标将唇部运动投影到张嘴、变宽、收拢三个轴，通过直方图 IoU 和 JS 距离评估相似度与多样性。渲染部分复用 LivePortrait 的解码器，保持视觉质量。</div><div class="en">—</div><figure><img src="assets/2610.06658/fig2.webp" alt="fig2"><figcaption>Figure 2: Framework of TalkLikeYou. Our method first generates habit-aware motion using the Flow Matching Motion Generator with optional habit sources through one-step sampling, and then renders them into a video. We further adopt a two-stage habit imitation learning strategy for more generalized and stable habit imitation. In the unified habit space, ⋆denotes the one-hot habit code and • denotes reference-video samples. During the first training stage, we use an alignment loss between reference video features and their corresponding one-hot habit codes.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 HDTF 和 CelebV-HQ 数据集上测试，基线包括 SadTalker, Hallo2, Sonic, FLOAT, Ditto 等。评测指标涵盖 Sync-C/D, FID, NIQE, FVD, CSIM 及新提出的 PLAD。结果显示 TalkLikeYou 在 Sync-C 上最优，FID 最低，FPS 达 32.43，显著优于 Ditto。PLAD 指标证明其在习惯模仿相似度上最高，多样性最好。消融实验表明两阶段训练和 Flow Matching 重参数化对提升稳定性和质量至关重要。用户研究也支持了视觉质量的提升，证明了该方法在保持身份一致性的同时，能有效模仿目标说话习惯。</div><div class="en">—</div><figure><img src="assets/2610.06658/fig3.webp" alt="fig3"><figcaption>Figure 3: Comparison Results. We compare our method with advanced baselines under three selected speaking habits, showing better visual quality and lip synchronization. Please zoom in for details. Video results are provided in the supplementary material.</figcaption></figure>
+<figure><img src="assets/2610.06658/fig4.webp" alt="fig4"><figcaption>Figure 4: Habit Imitation Comparison with related methods.</figcaption></figure>
+<figure><img src="assets/2610.06658/fig5.webp" alt="fig5"><figcaption>Figure 7: (a) Comparison of generation tendency under DDPM and Flow Matching. (b) PLAD histograms of different methods. (c) t-SNE visualization of the unified habit space, where stars denote preset one-hot habit features and dots denote reference-based habit features.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2610.06658/fig6.webp" alt="fig6"><figcaption>Figure 8: More results on habit imitation.</figcaption></figure>
+<figure><img src="assets/2610.06658/fig7.webp" alt="fig7"><figcaption>Figure 9: More comparison on Lip Synchronization with other baselines.</figcaption></figure>
+<figure><img src="assets/2610.06658/fig8.webp" alt="fig8"><figcaption>Figure 10: More visualization results on stylize faces.</figcaption></figure>
+</body></html>

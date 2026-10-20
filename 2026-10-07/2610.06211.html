@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Structured Representation Learning for Behavior Cloning: How can we learn to safely control a nuclear power plant?</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Structured Representation Learning for Behavior Cloning: How can we learn to safely control a nuclear power plant?</h1>
+<p class="meta">Perceval Beja-Battais, Alain Grosset{ê}te, Nicolas Vayatis<br>
+<a href="http://arxiv.org/abs/2610.06211v1">abs</a><a href="https://arxiv.org/pdf/2610.06211v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给工业界上了一课：在安全攸关的核反应堆控制里，单纯追求模仿准确率（Behavior Cloning Loss）简直就是掩耳盗铃。作者用事实告诉你，模型在组件级（component-level）表现再好，一旦嵌入系统，只要有一丁点轨迹不满足物理约束，整个系统就“炸”了。虽然他们提出的结构化架构（SRLBC）确实让模型更懂物理、更 interpretable，但最讽刺的是，光靠这个模型 standalone 部署依然有 2-5% 的轨迹会违规，完全不敢直接上线。不过，作者很聪明地没硬刚，而是把它当 NMPC 的“暖启动”（warmstart），既保住了安全底线，又省了 15% 的计算时间。这招“借鸡生蛋”比那些吹嘘端到端完美替代传统控制器的论文要务实得多，但也暴露了纯数据驱动方法在极端工况下的硬伤：没有优化器的兜底，AI 就是个不靠谱的实习生。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">在电力网格管理和核电厂负荷跟踪（load-following）场景下，传统的非线性模型预测控制（NMPC）虽然能保证严格的安全约束，但在线计算负担太重，难以在资源受限的工业管道中实时部署 [Qin and Badgwell, 2003; Rao, 2009]。机器学习（ML）被寄予厚望，旨在通过行为克隆（Behavior Cloning, BC）或强化学习来替代在线优化，从而降低计算成本 [Hossain and Kumar, 2023; Vaupel et al., 2020]。然而，现有研究往往过度依赖聚合准确率（aggregate accuracy）作为评价指标，误以为模仿损失低就等同于系统安全。本文指出，这种假设在安全攸关的系统中是致命的：组件级的精度无法保证嵌入系统后的可行性（feasibility）。对于压水堆（PWR）这种具有多时间尺度、强非线性且约束严苛的系统，现有的 ML 控制器往往因为忽略了物理结构的解耦，导致在长时程 rollout 中出现不可行的轨迹，甚至违反安全约束 [Hertneck et al., 2018]。因此，亟需一种既能保留物理可解释性，又能确保严格满足安全约束的控制器架构。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">本文提出了一种结构化表示学习用于行为克隆（SRLBC）的框架，核心思想是将输入变量按物理时间尺度分解，分别编码到独立的潜在空间，而非混合在一起。整体 Pipeline 分为编码、融合与决策三个阶段：首先，系统状态被分为慢状态变量 x（如硼浓度、碘氙浓度）、快状态变量 z（如功率、温度）和外部输入 w（如功率需求）。接着，三个独立的编码器（ϕx, ϕz, ϕw）分别将这些变量映射到各自的潜在空间，每个编码器都是基于 MLP 的架构。这种设计强制模型在特征提取阶段就遵循物理系统的奇异摄动结构（singularly perturbed structure），即慢变量和快变量在底层解耦。随后，将这三个独立的潜在表示拼接（product latent space），输入到控制器 πBC 中。控制器通过最小化与专家 NMPC 策略的均方误差进行训练。为了进一步提升性能，训练过程中还引入了去相关正则化项，强制不同时间尺度的潜在变量保持统计独立性。最后，该模型不仅可 standalone 部署，更关键的是作为 NMPC 优化器的初始猜测（warmstart），利用其快速预测能力引导优化器收敛，从而在保留 NMPC 安全性的前提下加速计算。</div><div class="en">—</div><figure><img src="assets/2610.06211/fig1.webp" alt="fig1"><figcaption>Figure 2: Sensitivity analysis.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验基于一个高保真的压水堆（PWR）负荷跟踪仿真器，构建了包含约 80,000 个训练点和 1,000 个测试 rollout（每个 48 小时）的数据集。基线对比了不同维度的共享嵌入（Shared Embedding）BC 模型与本文提出的 SRLBC 模型。评测指标包括成本比率（Cost Ratio）、与最优控制的相对差距、轨迹可行性（Feasibility）以及计算时间。结果显示，SRLBC 在 standalone 模式下，可行性达到 97.8%，优于共享嵌入基线的 94.1%，且成本更接近最优。更有趣的是，当作为 NMPC 的 warmstart 时，SRLBC 不仅恢复了 100% 的可行性，还将计算时间减少了约 15%（相对于纯 NMPC），特别是在应对突发工况变化时加速效果显著。消融实验表明，引入去相关正则化（Decorrelation）能进一步提升性能。敏感性分析（图 2）证实，结构化编码使得模型对关键物理变量（如硼浓度）的依赖更加清晰，符合核物理常识，而共享嵌入则显得模糊且难以解释。</div><div class="en">—</div><figure><img src="assets/2610.06211/fig2.webp" alt="fig2"><figcaption>Figure 3: Representative example of a failure using SRLBC standalone controller (dotted, blue). NMPC expert is plotted in solid green. At t ≈15 hours, a last-minute change occurs: the power that was increasing is rapidly asked to decrease, which creates a challenging situation. SRLBC fails to keep the axial offset above −5% (bottom-left graph).</figcaption></figure>
+</body></html>

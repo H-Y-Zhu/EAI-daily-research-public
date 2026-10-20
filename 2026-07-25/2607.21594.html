@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Streaming Multi-Agent Autoregressive Diffusion Model with World State Registers</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Streaming Multi-Agent Autoregressive Diffusion Model with World State Registers</h1>
+<p class="meta">Sicheng Mo, Yuheng Li, Ziyang Leng, Krishna Kumar Singh, Bolei Zhou<br>
+<a href="http://arxiv.org/abs/2607.21594v1">abs</a><a href="https://arxiv.org/pdf/2607.21594v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给多智能体世界模型来了个“显性记忆”。以往的视频生成模型靠 KV Cache 记历史，容易忘事，尤其是多视角下容易精神分裂。WorldWeaver 搞了个“世界状态寄存器”，像个小本本，专门记全局状态。虽然用了 Minecraft 这种仿真环境，但逻辑一致性确实提上去了。不过，MoT 架构虽然稳，但参数多了也是负担。总的来说，是把“记性”从像素里剥离出来，算个聪明路子，但离真实世界还有距离。此外，依赖仿真器数据意味着真实世界的复杂状态（如物理细节）仍是黑盒，这限制了泛化能力。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">多智能体交互世界模型的核心痛点是“一致性”。现有工作如 Solaris (Savva et al., 2026) 或 Diffusion Forcing (Chen et al., 2024) 主要依赖帧历史作为条件，导致共享状态难以跨视角维持。每个代理只看到 2D 投影，但世界状态是 3D 且持续的。如果只靠像素历史，模型容易在长序列生成中产生逻辑漂移，比如 Alpha 和 Bravo 的位置关系对不上。作者认为应该直接建模底层世界状态，而不是让一致性成为视频生成的副产品。这种隐式记忆机制在处理长程依赖时尤为脆弱，导致跨代理交互时出现几何或语义冲突。</div><div class="en">—</div><figure><img src="assets/2607.21594/fig1.webp" alt="fig1"><figcaption>Figure 1: Our model enables interactive agents acting in a shared world. During rollout, a set of register tokens represents the evolving world state shared across agents. This state captures agent status, bird’s-eye views, and scene text, and is being dynamically updated at each rollout step while new frames are generated.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分三阶段。Stage 1 用双向注意力训练多玩家 Teacher，学习同步场景结构。Stage 2 转为因果 Student，引入 World State Registers (WSR)，这是可学习的 token，存储共享信息。训练时加入辅助监督：Agent status（位置速度）、Bird&#x27;s-eye view（全局几何）、Scene text（语义）。Stage 3 用 Self-Forcing，在训练时模拟推理时的自生成历史，暴露状态漂移。架构上用 Mixture-of-Transformers (MoT)，把世界状态建模和视觉帧建模的权重分开，避免目标冲突。推理时，寄存器随每帧生成动态更新，作为下一帧的条件。具体而言，WSR 在每帧生成后提交，作为后续帧的条件输入，形成因果链。MoT 设计允许状态分支独立学习，防止视觉任务干扰状态编码。</div><div class="en">—</div><figure><img src="assets/2607.21594/fig2.webp" alt="fig2"><figcaption>Figure 2: Pipeline overview. (A) A standard streaming autoregressive diffusion model denoises each new frame from a local KV cache window. (B) Our model streams with world state registers, which carry global state information and individual agent status. (C) Causal attention mask during Stage-2 training. Frame tokens attend to the local window and the latest register. (D) Auxiliary decoders ground the registers with agent status, bird’s-eye-view maps, and scene text, encouraging the world state registers to encode global scene information.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">基于 SolarisEngine 收集的 126 小时双玩家 Minecraft 视频。基线包括 Frame concat 和 Solaris。评测用 VLM accuracy 和 FID，还有 WorldScore。结果显示 W2 在 Grounding 和 Consistency 上大幅超越 Solaris（93.8 vs 81.3）。消融实验表明，显式监督信号（尤其是 Scene text）对寄存器学习至关重要。MoT 架构在引入文本监督后效果优于 Dense 架构。半监督实验显示少量标注数据能锚定状态。在 1K 标注数据下，加入 10K 无标签数据可将 WorldScore 提升至 90.3，证明了半监督策略的有效性。</div><div class="en">—</div><figure><img src="assets/2607.21594/fig3.webp" alt="fig3"><figcaption>Figure 3: Qualitative visualization. We show generated multi-agent rollouts with grounded world states: agent coordinates, bird’s-eye-view maps, and scene text. These signals make the persistent world state inspectable and help verify cross-player consistency over time. Please refer to the project page for more detailed video demo.</figcaption></figure>
+<figure><img src="assets/2607.21594/fig4.webp" alt="fig4"><figcaption>Figure 4: VLM accuracy over Stage 3 self-forcing.</figcaption></figure>
+</body></html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>When Robots Exchange Meaning: A Demo of Goal-Oriented Semantic Communications for Collaborative Robotics</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>When Robots Exchange Meaning: A Demo of Goal-Oriented Semantic Communications for Collaborative Robotics</h1>
+<p class="meta">Peizheng Li, Xinyi Lin, Sajida Gufran, Adnan Aijaz<br>
+<a href="http://arxiv.org/abs/2607.28256v1">abs</a><a href="https://arxiv.org/pdf/2607.28256v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文与其说是科研突破，不如说是工业界的一次“概念验证秀”。Toshiba 团队把语义通信（SemCom）硬塞进机器人协作里，试图用 VQ-VAE 把图像压成 token 流，再在边缘端还原。亮点是确实跑通了从机器人端到边缘端的语义传输闭环，还接上了 ROS 2 和 RTAB-Map，让“通信质量”不再只是看丢包率，而是看能不能导航。但槽点也不少：PSNR 才 21dB 左右，重建图糊得能看清轮廓就算胜利，这真的够“语义”吗？而且这还是个 Work-in-Progress 的 Demo，无线延迟、能耗都没测，所谓的 6G 任务导向更多是画饼。不过，能把 VQ-VAE 塞进嵌入式机器人跑通，至少证明了 SemCom 在具身智能里不是纯理论空谈，算是给未来 6G 机器人网络搭了个粗糙但可用的脚手架。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有 6G 系统仍停留在以数据包为中心的优化，而协作机器人需要的是任务完成度而非单纯的传输指标 [1]。机器人产生海量感知数据（RGB-D、LiDAR），但下游任务只关心语义信息，传统压缩浪费带宽。语义通信（SemCom）能压缩数据同时保留任务相关表征，但缺乏与具身 AI 结合的实证平台。现有工作多关注网络层算法，忽略了机器人侧的嵌入式部署和边缘 SLAM 的融合 [2]。本文旨在填补这一空白，展示如何在真实机器人系统中实现从语义压缩到地图构建的端到端流程，为任务感知网络提供实验基础。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">系统采用机器人 - 边缘架构。机器人端（Jetson Nano）运行 ROS 2，通过 VQ-VAE 将 320×240 RGB 帧编码为 80×60 的 token 网格，使用 ONNX Runtime 推理，Payload 仅 5400 字节，压缩比达 42.67 倍。边缘端（Jetson Orin）接收 token，用 PyTorch 解码还原图像，并融合深度、位姿数据。核心创新在于将语义流与传统遥测分离，利用 RTAB-Map 构建 3D 地图，并在重建图像上运行微调的 YOLO 检测器，将物体投影到语义地图中。最后通过 Dashboard 实现任务控制，允许操作员基于重建视图下达导航指令。整个流程强调语义 token 到机器人效用（如导航、任务规划）的映射，而非单纯图像重建质量。通信层基于私有 5G/Open RAN，语义 token 流作为独立任务流，支持资源分配。</div><div class="en">—</div><figure><img src="assets/2607.28256/fig1.webp" alt="fig1"><figcaption>Fig. 1. Robot-edge architecture for the collaborative robotics demo.</figcaption></figure>
+<figure><img src="assets/2607.28256/fig3.webp" alt="fig3"><figcaption>Fig. 3. Dashboard functions illustration that combines monitoring, mapping, semantic reconstruction, and mission control.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验基于真实机器人测试床，包含多机器人协作场景。主要指标为 Payload 减少量（42.67 倍）和重建质量（离线测试 PSNR 21.7-21.9 dB）。图 2 展示了原始与重建帧对比，模型保留了主要场景布局和大物体，丢弃了细纹理。语义地图功能验证了重建图像支持物体级交互（如语义搜索）。Dashboard 展示了监控、映射和任务控制的集成。虽然未提供详细的 5G 延迟或能耗数据，但证明了从语义视觉传输到地图交互的可行性，为后续任务感知网络研究提供了平台。视频演示展示了多机器人 RTAB-MAP 感知融合和协同控制，进一步验证了系统的可扩展性。</div><div class="en">—</div><figure><img src="assets/2607.28256/fig2.webp" alt="fig2"><figcaption>Fig. 2. Example original and reconstructed frames from the VQ-VAE pipeline.</figcaption></figure>
+</body></html>

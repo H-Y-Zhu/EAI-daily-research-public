@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Path Planning in Physically Viable World Models</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Path Planning in Physically Viable World Models</h1>
+<p class="meta">Su Ann Low, Cheng-Hsi Hsiao, Xingjian Li, Adam J. Thorpe, Ufuk Topcu, Krishna Kumar<br>
+<a href="http://arxiv.org/abs/2607.00673v1">abs</a><a href="https://arxiv.org/pdf/2607.00673v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给户外机器人开了个“预知未来”的挂，用高斯泼溅（Gaussian Splatting）搭个静态骨架，再灌入物理引擎（MPM）模拟洪水滑坡，试图在出发前就看清路会不会被淹。这思路挺香，毕竟野外没法随时重建地图。但吐槽点也不少：所谓的“物理可行性”目前主要靠几何高度和简单的阈值判断，对土壤软硬、植被阻力等语义信息几乎无感，属于“看得懂地形，不懂路况”。而且实验全在仿真里跑，真机验证？论文里只字未提，硬件落地风险被物理引擎的保真度给掩盖了。此外，干预级别是离散的，可能错过关键阈值。总的来说，是个不错的“事前诸葛亮”框架，但别指望它能替代真正的感知规划，更像是一个昂贵的仿真预演工具。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">户外机器人常面临“地图过时”的困境。操作员无法在每次任务前重新测绘大型偏远区域，导致机器人基于静态重建地图规划，假设地形不变 [3, 4, 5, 6]。然而，洪水、塌方等物理变化可能让可行路径瞬间失效。在受限地形中，一旦进入无法返回的区域，这种静态假设代价惨重。现有世界模型多关注视觉预测或强化学习策略，缺乏对地形力学、接触动力学的显式建模 [19-27]。NeRF 等方法虽能规划，但计算开销大且假设静态 [15-17]。本文旨在构建物理可行的世界模型（PVWM），允许在单次重建基础上，通过物理干预查询未来状态，评估路径在环境变化下的可行性，而非仅依赖当前观测，解决长时程规划中的环境演化问题。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分为场景重建、物理干预模拟与地形感知规划三阶段。首先，利用无人机视频训练 3D Gaussian Splatting 重建场景，通过几何特征（垂直/水平延伸）过滤高斯原语生成数字高程模型（DEM）和障碍掩码。其次，引入物质点法（MPM）对重建场景施加物理干预（如洪水、滑坡），修改高斯原语位置或添加新原语，生成物理一致的未来场景。最后，基于 FOCI 框架进行轨迹优化，将机器人和场景均表示为高斯原语，计算解析重叠积分作为碰撞代价，使用 IPOPT 求解器。创新点在于：1) 将 MPM 模拟结果投影为导航表面和不可通行掩码，约束规划器仅在可行地表搜索；2) 引入体积化危险编码，防止优化器绕过浅层障碍；3) 规划时强制地面接触约束，避免规划出悬空路径；4) 使用 B-spline 参数化轨迹，确保速度加速度约束连续满足。</div><div class="en">—</div><figure><img src="assets/2607.00673/fig1.webp" alt="fig1"><figcaption>Figure 1: A physically viable world model generates scenes given different queries, and a traversability-aware path planner optimizes for routes under physical viability constraints.</figcaption></figure>
+<figure><img src="assets/2607.00673/fig5.webp" alt="fig5"><figcaption>Figure 5: Digital elevation map (DEM) of the environment.</figcaption></figure>
+<figure><img src="assets/2607.00673/fig7.webp" alt="fig7"><figcaption>Figure 7: Illustration of the MPM update scheme. (1) Material points carry physical state (mass, momentum, stress) and are overlaid on a fixed background grid. Interpolation weights distribute each particle’s mass and momentum to neighboring grid nodes (P2G). (2) The equations of motion are solved on the grid: nodal velocities are obtained by normalizing momentum by mass, internal stress forces are applied, and boundary conditions are enforced. (3) Updated nodal velocities are interpolated backe to the material points (G2P), updating each particle’s velocity, position, and de- formation gradient. (4) The material points advance to their new positions, and the grid is reset to zero in preparation for the next time step.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在三个真实/半真实场景中验证：德克萨斯州野外（洪水）、阿拉斯加村庄（洪水 + 车辆交互）、沙盒（滑坡）。指标包括路径可行性、重规划成本比及可达性。结果显示，随着洪水等级增加，部分路径从可行变为不可达，或需大幅绕行。例如德克萨斯场景中，Pair 3 在严重洪水下目标不可达，而静态重建无法预警，Pair 1 重规划成本增加 20.3%。阿拉斯加实验表明，即使几何不变，物理交互（水深）也能导致车辆失速。沙盒实验展示了应对未观测到的滑坡障碍的 rerouting 能力。对比静态重建证明了 PVWM 揭示潜在风险的能力，但在不同干预等级间可能存在未采样的风险过渡。</div><div class="en">—</div><figure><img src="assets/2607.00673/fig2.webp" alt="fig2"><figcaption>Figure 2: Path planning results under different flood levels.</figcaption></figure>
+<figure><img src="assets/2607.00673/fig3.webp" alt="fig3"><figcaption>Figure 3: Simulating traversability of an Alaskan Village before and after flood. Top: the original reconstruction of the Alaska dataset with a truck simulated as a rigid ball applied to constant torque. Bottom: flood simulation using additional material points interacting with the rigid truck. The orange circles highlight the truck location in each frame.</figcaption></figure>
+<figure><img src="assets/2607.00673/fig4.webp" alt="fig4"><figcaption>Figure 4: Path planning in the sandbox. The red dashed circle highlights the landslide region.</figcaption></figure>
+<figure><img src="assets/2607.00673/fig6.webp" alt="fig6"><figcaption>Figure 6: Terrain height maps under increasing flood levels. The first row corresponds to dry and low flood conditions, while the second row corresponds to medium and high flood conditions.</figcaption></figure>
+</body></html>

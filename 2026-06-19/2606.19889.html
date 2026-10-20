@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SurgVista: Long-Horizon Surgical World Modeling with Plausible Instrument-Tissue Dynamics</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>SurgVista: Long-Horizon Surgical World Modeling with Plausible Instrument-Tissue Dynamics</h1>
+<p class="meta">Wentao Pan, Wuyang Li, Shengyuan Liu, Xinyu Liu, Hengyu Liu, Yixuan Yuan<br>
+<a href="http://arxiv.org/abs/2606.19889v1">abs</a><a href="https://arxiv.org/pdf/2606.19889v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给手术世界模型（SWM）打了一针强心剂。以往的方法要么像“纸片人”手术，器械碰组织不形变；要么像“崩坏三”，跑久了画面就糊。SurgVista 用两个 tricks 硬是把长时程预测稳住了，这点值得点赞。不过，别高兴太早，它本质上还是个视频生成模型，不是物理仿真器，遇到大形变还是得歇菜。SurgWorld-Bench 虽然新，但依赖追踪算法，万一追踪错了，指标再高也是虚高。总的来说，是 Embodied AI 里难得的“能看”的模拟器，但离真正能训练机器人策略还有距离。此外，长时程生成虽好，但计算开销也不小，毕竟要跑 100K 次迭代。对于追求极致物理真实性的研究者来说，这更像是一个“视觉皮囊”而非“物理内核”，但在缺乏真实数据的安全沙盒构建上，确实比纯仿真器更灵活。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">自主手术机器人政策学习面临两大拦路虎：专家演示昂贵且体内探索风险高 [11]。手术世界模型（SWM）本应是安全替代方案，但现有工作 [19, 32, 27] 存在两个顽疾。一是空间交互不连贯，器械接触组织时，周围组织不产生符合物理规律的形变，像“隔空打牛” [9, 27]。二是时序保真度崩塌，自回归生成长序列时，预测误差累积导致画面过曝、色彩漂移 [21, 12]。通用域世界模型 [14, 31] 无法解决手术场景特有的低光照、烟雾遮挡及精细组织形变问题。因此，亟需一种能维持长时程器械 - 组织动态一致性的生成模型，并建立更严谨的评估基准。</div><div class="en">—</div><figure><img src="assets/2606.19889/fig1.webp" alt="fig1"><figcaption>Figure 1: Surgical world modeling. (a) Simulating scene evolution for safe policy learning. (b) Predicting future frames from an initial frame and instrument actions. Two key challenges: (c) Tissue fails to deform under instrument contact. (d) Visual quality degrades over long-horizon rollouts.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">SurgVista 基于预训练 latent video DiT [33]，采用 Flow Matching 框架。整体流程分为动作编码、去噪生成及两项正则化训练。首先，Latent Action Encoding 将器械关键点轨迹映射到潜在空间，通过复制首帧特征生成动作潜码，无需辅助模块 [10]。核心创新在于两项训练策略：Deformation Consistency Regularization (DCR) 利用点追踪器 [23] 提取密集场景点轨迹，在潜在空间通过 InfoNCE 损失强制同一轨迹点在不同帧的特征一致性，解决器械接触组织时的形变不一致问题。Drift Adaptation Training (DAT) 针对自回归推理时的分布偏移，通过两种代理模拟漂移：一是在线预测残差（模型内在），将当前模型预测误差注入条件帧；二是光度增强（模型无关），模拟长时程生成的曝光、对比度退化。两者结合，使模型在训练时即适应推理时的条件退化，显著提升长序列稳定性。</div><div class="en">—</div><figure><img src="assets/2606.19889/fig2.webp" alt="fig2"><figcaption>Figure 2: Overview of SurgVista. (a) Training paradigm, consisting of two training recipes: Deformation Consistency Regularization (DCR) and Drift Adaptation Training (DAT). (b) DAT simulates inference-time conditioning drift via two complementary proxies. (c) DCR enforces cross- frame motion cohere</figcaption></figure>
+<figure><img src="assets/2606.19889/fig3.webp" alt="fig3"><figcaption>Figure 3: Main photometric statistics over long- horizon predictions.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">作者提出 SurgWorld-Bench，涵盖三种手术类型，评估短（80 帧）长（800 帧）两个时程。指标解耦为器械运动精度与组织响应保真度。对比基线包括通用视频模型 [4, 37, 35, 33] 及专用模型 SurgSora [9]。SurgVista 在所有指标上均领先，且长时程优势扩大，证明 DAT 有效抑制了误差累积。消融实验显示，DCR 单独提升运动一致性，DAT 单独提升长时程稳定性，两者结合效果最佳。但实验也承认，面对大尺度组织形变或极精细操作时仍存在失败案例，说明物理一致性仍有提升空间。</div><div class="en">—</div><figure><img src="assets/2606.19889/fig4.webp" alt="fig4"><figcaption>Figure 4: Overview of SurgWorld-Bench. (a) Task setup with three procedure types and two evaluation horizons. (b) Evaluation suite with decoupled instrument and tissue trajectory metrics. (c) Data curation pipeline for extracting region-specific motion trajectories.</figcaption></figure>
+<figure><img src="assets/2606.19889/fig5.webp" alt="fig5"><figcaption>Figure 5: Qualitative comparison with state-of-the-art methods. Left: short-horizon predictions at frames 1, 5, 10, and 15. Right: long-horizon predictions at frames 1, 100, 500, and 800.</figcaption></figure>
+</body></html>

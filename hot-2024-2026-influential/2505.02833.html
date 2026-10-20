@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TWIST: Teleoperated Whole-Body Imitation System</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>TWIST: Teleoperated Whole-Body Imitation System</h1>
+<p class="meta">Yanjie Ze, Zixuan Chen, J. P. Ara&#x27;ujo, Zi-ang Cao, Xue Bin Peng, Jiajun Wu<br>
+<a href="https://arxiv.org/abs/2505.02833">abs</a><a href="https://arxiv.org/pdf/2505.02833">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">TWIST 号称单网络搞定全身，确实让 Unitree G1 能边踢球边搬箱子，这“全身协调”听着挺美。但别高兴太早，这系统离“通用”还差得远，毕竟离不了昂贵的 MoCap 设备，户外野战？想都别想。延迟近 1 秒，操作者还得忍受过热停机，这“实时”有点勉强。不过，Teacher-Student 蒸馏策略确实解决了实时观测的平滑性问题，算是 RL 在具身智能里的一次漂亮翻身仗。它证明了单一策略能覆盖 locomotion 和 manipulation，但硬件反馈缺失和依赖 MoCap 是硬伤，未来若能用 RGB 替代，这技术才真正有落地价值。</div><div class="en">...</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有全身遥操作系统大多只能处理单一任务，比如 Mobile-TV [27] 和 HOMIE [28] 上下身解耦，无法完成踢球或跨障碍。HumanPlus [7] 依赖视觉估计，根节点精度差；OmniH2O [8] 仅捕捉上半身。人类日常任务需要全身协调（如弯腰捡东西），但现有方法缺乏实时全身跟踪目标和鲁棒控制器。离线模仿数据不足，因为具身差距导致直接模仿无效，必须构建遥操作获取真实观测 - 动作数据。TWIST 旨在解决这一差距，通过 MoCap 获取高质量数据，训练单一策略实现全身模仿，填补了通用家庭机器人所需的协调技能空白。</div><div class="en">...</div><figure><img src="assets/2505.02833/fig2.webp" alt="fig2"><figcaption>Figure 2: The Teleoperated Whole-Body Imitation System (TWIST) presents versatile, coordinated, and human-like whole-body skills on real-world humanoid robots. Our robot can perform whole-body manip- ulation (e.g., lifting boxes from the ground), legged manipulation (e.g., kicking the football), locomotion (e.g., walking sideways), and expressive motions (e.g., Waltz dance). More videos: humanoid-teleop.github.io</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">系统分三阶段：数据构建、仿真训练、真机遥操作。核心创新在于控制器训练：采用 Teacher-Student 框架，Teacher 利用未来帧（privileged info）学习平滑轨迹，Student 仅用当前帧蒸馏，解决实时延迟导致的保守行为。数据端，结合大规模离线 MoCap 和小规模在线 MoCap 数据，缩小分布差异。此外，在线重定向同时优化 3D 位置与朝向，减少离线到在线的差距；训练中加入末端扰动，让策略学会施力而非仅跟踪位置。最终策略输出关节位置，通过 PD 控制底层执行，实现了从仿真到真机的零样本部署。</div><div class="en">...</div><figure><img src="assets/2505.02833/fig3.webp" alt="fig3"><figcaption>Figure 3: The Teleoperated Whole-Body Imitation System (TWIST) consists of 3 stages: 1) curating a humanoid motion dataset by retargeting Internet human data and our MoCap data, 2) training a single whole- body controller in simulation, 3) teleoperating real-world humanoid robots with MoCap devices.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 Unitree G1 和 Booster T1 上验证。对比 RL、BC、DAgger，RL+BC 组合在跟踪误差和流畅度上最优，纯 RL 易脚滑，纯 BC 泛化差。消融实验显示，加入小规模在线 MoCap 数据显著降低未见动作误差；末端扰动训练提升了接触任务稳定性。系统延迟约 0.9 秒，主要耗时在目标生成。虽然存在电机过热等硬件限制，但策略展现了极强的全身可达性和平衡能力，证明了单一策略的通用性。</div><div class="en">...</div><figure><img src="assets/2505.02833/fig5.webp" alt="fig5"><figcaption>Figure 6: (left) Tracking errors of different controllers, measured on our MoCap test data. (right) Controller behaviors. Our RL+BC controller produces smooth and robust behaviors.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2505.02833/fig1.webp" alt="fig1"><figcaption>Figure 1: The Teleoperated Whole-Body Imitation System (TWIST) is a system that teleoperates humanoid robots with real-time whole-body human data and a single neural network controller. TWIST achieves versatile, coordinated, whole-body skills that are not present in previous works.</figcaption></figure>
+<figure><img src="assets/2505.02833/fig4.webp" alt="fig4"><figcaption>Figure 4: Booster T1 sim2sim results. The whole-body controller is trained in IsaacGym [40] and evaluated in MuJoCo [45]. The tracking goals are sampled from training data.</figcaption></figure>
+<figure><img src="assets/2505.02833/fig6.webp" alt="fig6"><figcaption>Figure 7: (left) Rollout curves in the real world when the robot holds a box. (right) Rollout curves in MuJuCo from different controllers when tracking MoCap data.</figcaption></figure>
+<figure><img src="assets/2505.02833/fig7.webp" alt="fig7"><figcaption>Figure 9: (a) Extreme reachability by TWIST. (b) Failures caused by motor overheating.</figcaption></figure>
+</body></html>

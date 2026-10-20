@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MatchingPolicy: Correspondence-Aware Policy Enables Cross-Object In-Context Learning</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>MatchingPolicy: Correspondence-Aware Policy Enables Cross-Object In-Context Learning</h1>
+<p class="meta">Qijin She, Hanyang Yu, Zeming Li, Ping Tan<br>
+<a href="http://arxiv.org/abs/2608.16715v1">abs</a><a href="https://arxiv.org/pdf/2608.16715v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">MatchingPolicy 这名字起得挺直白，就是靠“匹配”吃饭。作者很聪明地把“找对应点”和“学动作”拆开了，不再让一个模型既当侦探又当演员。核心在于用视觉基础模型（VFM）先算出稠密对应关系，再喂给扩散策略。这招确实比那些硬让 Transformer 猜对应关系的要稳，尤其在跨物体泛化上表现亮眼。不过，依赖 VFM 做实时匹配，推理延迟和算力成本是个隐忧，而且数据集全是合成的，虽然他们声称实机效果不错，但真实世界的纹理和光照变化会不会让 VFM 匹配崩盘？另外，短 horizon 的限制让它在复杂任务面前还是有点“短视”。总的来说，思路清晰，工程落地有潜力，但别指望它能立刻解决所有长程规划问题，毕竟机器人不是靠“看图说话”就能干活的，还得看它能不能扛住真实世界的噪声。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有的模仿学习通常需要大量特定任务数据 [25]，而基于 In-Context Learning (ICL) 的方法虽然能少样本适应 [10]，但在面对未见过的物体或场景时表现往往崩塌。现有方法（如 [19]）试图让单一模型同时完成从演示到场景的对应关系推断和动作适应，这在视觉复杂或几何多变的环境中构成了双重负担，导致对应关系提取和动作泛化互相掣肘。特别是当任务涉及新物体实例或类别时，依赖几何特征的基线方法容易失效。例如，InstantPolicy 在 Layout-Hard 设置下成功率降为 0%。因此，亟需一种能显式解耦对应关系提取与策略学习的框架，利用类比推理而非海量数据来实现跨物体的泛化，避免模型陷入“既要又要”的困境，从而真正实现少样本下的鲁棒迁移。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分为对应关系提取与策略学习两阶段。首先，利用 Vision Foundation Models (VFMs) 进行跨场景语义匹配，结合点追踪器（Point Tracker）生成稠密时空对应点 [23]。其次，构建基于图结构的扩散策略模型。该模型将当前帧、演示帧及动作帧的关键点作为图节点，通过三类边连接：跨帧对应边（传递意图）、帧内空间边（建模几何）、动作一致性边（保证时序）。策略以显式对应关系为先验，预测末端执行器位移。训练时使用合成数据集 MATCHINGDATASET，包含 150k 轨迹和 50k 物体实例 [3]。部署时，无需微调，直接利用 VFM 提取的对应点输入策略。此外，引入局部几何细化（Local Geometric Refinement）增强鲁棒性，并通过扩散去噪目标解码动作。这种设计让策略专注于动作适应，而不再纠结于视觉特征的对齐，实现了模块化的解耦学习。</div><div class="en">—</div><figure><img src="assets/2608.16715/fig1.webp" alt="fig1"><figcaption>Figure 1. The overview of MatchingPolicy. Correspondence points are extracted using a two-stage feature matching algorithm with VFMs and subsequently passed into a graph-based diffusion policy model to predict 6D gripper poses. These predicted motions are then translated into robot joint commands, with the model trained end-to-end on our synthetic dataset.</figcaption></figure>
+<figure><img src="assets/2608.16715/fig2.webp" alt="fig2"><figcaption>Figure 2. Our Correspondence-Aware Policy Model. Left: The selected correspondence key points on 2D images of demonstration frames, current frame, and action frames. Right: The structure of our graph-based policy model. The red lines with two-way arrow indicate the one-to-one mapping between the graph nodes in the network and the key points in the current frame. Node lines indicate data transfer. The lines connecting the two frames are a simplified view; the detailed node-to-node links are omitted for visual clarity</figcaption></figure>
+<figure><img src="assets/2608.16715/fig3.webp" alt="fig3"><figcaption>Figure 3. Overview of MATCHINGDATASET, MATCHINGENGINE spatially retargets each reference demonstration to produce task- consistent trajectories with ground-truth 3D correspondences.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 RLBench 的 36 个任务上，MatchingPolicy 在 OOD-Hard 任务中显著优于 InstantPolicy 和 KAT [8]，无需微调即可达到高成功率。实机实验在 AirBot 机械臂上验证了跨布局（Layout）和跨物体（Shape）的泛化能力，平均成功率在 Layout-Hard 下达 65%，远超基线。消融实验表明，两阶段匹配比 naive 3D 匹配更准确，且“重叠块”规划策略（Overlapping Chunks）提升了轨迹平滑度。尽管在 Shape 泛化上表现优异，但实机速度较慢，且视图选择依赖特定平台配置。在 Put Lid 任务中，它能正确识别不同形状的盖子，证明了跨类别泛化能力，但面对动态任务如 Fling 仍无能为力 [12]。</div><div class="en">—</div><figure><img src="assets/2608.16715/fig4.webp" alt="fig4"><figcaption>Figure 5. Generalization capabilities of MatchingPolicy with a single demonstration. Left: Novel layouts; Right: Unseen object instances</figcaption></figure>
+<figure><img src="assets/2608.16715/fig6.webp" alt="fig6"><figcaption>Figure 7. The real-world four tasks for evaluation.</figcaption></figure>
+<figure><img src="assets/2608.16715/fig7.webp" alt="fig7"><figcaption>Figure 8. The diverse set of test objects</figcaption></figure>
+<figure><img src="assets/2608.16715/fig8.webp" alt="fig8"><figcaption>Figure 9. Cross-Category Generalization</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2608.16715/fig5.webp" alt="fig5"><figcaption>Figure 6. Data generation pipeline of MatchingDataset</figcaption></figure>
+<figure><img src="assets/2608.16715/fig9.webp" alt="fig9"><figcaption>Figure 10. Interaction following shown in the demonstrations.</figcaption></figure>
+</body></html>

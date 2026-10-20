@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COMFYCLAW: Self-Evolving Skill Harnesses for Image Generation Workflows</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>COMFYCLAW: Self-Evolving Skill Harnesses for Image Generation Workflows</h1>
+<p class="meta">Zongxia Li, Dawei Liu, Fuxiao Liu, Yuhang Zhou, Xiyang Wu, Jingxi Chen<br>
+<a href="http://arxiv.org/abs/2607.01709v1">abs</a><a href="https://arxiv.org/pdf/2607.01709v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 ComfyUI 加了个“自我进化”的脑壳，试图让 Agent 别光靠 Prompt 瞎蒙，而是把修图流程变成可复用的技能。COMFYCLAW 这名字听着像爪子，确实想抓牢 workflow 的命门。亮点在于它不满足于单次生成，而是搞了个技能进化库，把失败经验蒸馏成 Agent Skills，有点像 Voyager 在图像领域的翻版。但吐槽点也很明显：ComfyUI 本身就是个节点地狱，这框架虽然加了 typed graph editing 和 VLM verifier，但本质上还是在跟 Diffusion 模型的随机性搏斗。而且实验主要集中在静态图片，视频生成直接略过，毕竟视频节点更复杂，这“进化”可能跑不动。另外，技能库的验证依赖 held-out prompts，如果测试集分布偏移，技能会不会变脆？总之，是个不错的 Agent 工作流尝试，但离“通用具身”还差着物理世界的距离，更多是数字世界的“画饼”大师。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有 Agent 正从 Prompt 聊天转向工作流执行 [1, 2]，尤其在图像生成领域，Prompt 掩盖了太多决策细节（如 conditioning 方式、组件组合）[4, 5]。ComfyUI 暴露了这些决策，但也让 Agent 面临图编辑、约束满足和故障修复的复杂挑战 [3]。现有工作如 ComfyGen [4]、ComfyGPT [5] 多优化单次 Prompt 的生成，缺乏长期记忆。虽然 GEMS [18] 展示了闭环优化潜力，但其技能库是静态的，或仅被动存储经验而非主动提炼为可复用技能 [18]。这意味着一次成功的修复很难转化为未来安全调用的验证过程 [8]。Voyager [8] 虽通过自动课程和技能库实现自我改进，但主要面向开放环境。COMFYCLAW 旨在解决这一痛点：Agent 不仅要在单次运行中修复工作流，还需将反馈转化为长期可复用的控制知识。这需要两个组件：暴露工具/反馈的 Harness 和将经验转化为程序性知识的技能管理 [19-24]。缺乏进化技能会导致重复试错，缺乏强 Harness 则技能易脆 [25-30]。因此，核心问题是：自验证器的反馈能否同时支持即时修复和长期技能库进化？</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">COMFYCLAW 框架将工作流构建视为技能增强的 MDP，包含三个核心模块。首先是 Workflow Construction Harness，将 ComfyUI 图编辑建模为有类型（typed）的图编辑序列。Agent 通过规划、构建、增强三个阶段操作 DAG，支持节点插入、参数调整、LoRA 加载等。技能检索采用渐进式披露（progressive disclosure），仅展示元数据，按需加载详情，控制上下文大小。其次是 Verifier-Guided Refinement，使用 VLM（如 Qwen3-VL-8B-Instruct）作为验证器。它将 Prompt 分解为可观测需求清单，返回通过/失败标签、整体细节分及局部失败描述。奖励函数结合需求通过率（60%）和细节分（40%）。验证器提供结构化反馈驱动迭代，直到分数达标或达到最大迭代次数。最后是 Skill Evolution，这是核心创新。系统收集成功/失败轨迹，按反馈和错误聚类。针对每个簇，Agent 提议技能突变（创建、修订、合并等）。突变需经过验证集测试（held-out prompts），仅当性能不下降时才提交到技能库。这确保了技能的可复用性和泛化性，而非过拟合单次任务。整个流程形成闭环：执行 -&gt; 验证 -&gt; 进化 -&gt; 复用。</div><div class="en">—</div><figure><img src="assets/2607.01709/fig1.webp" alt="fig1"><figcaption>Figure 1: Overall framework of COMFYCLAW. The agent edits a ComfyUI workflow graph, the runtime renders a candidate image, the verifier returns requirement-level and region-level feedback, and the agent evolves skills that can be reused in future workflow-construction runs.</figcaption></figure>
+<figure><img src="assets/2607.01709/fig3.webp" alt="fig3"><figcaption>Figure 4: Iterative visual refinement under COMFYCLAW. (a) four purple lions (verifier 0.33→0.91); (b) a clock to the left of three glass pigs (verifier 0.31→0.96). Each strip reads left to right: the agent inspects the current image, the verifier emits a critique (blue), the agent turns it into a refinement instruction (orange) for the next pass, and re-executes the workflow; the selected best output is highlighted in green. Refinement repairs unusual-color attributes, conflicting workflow components, or spatial-relation failures that the single-pass baseline could not resolve.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在四个基准上评估：GenEval2（组合推理）、DPG-Bench（密集提示）、OneIG-EN/ZH（多语言/风格）。使用三种 Agent（Claude Sonnet 4.5, Qwen-3.6-35B, Gemma-4-E4B）和两个图像骨干（LongCat, Z-Image-Turbo）。基线为仅使用初始工具的 BASE 方法。指标包括 GenEval2 的 Soft-TIFA 几何平均、DPG 的算术平均及 OneIG 的 VQAScore。结果显示 COMFYCLAW 在所有配置下均优于 BASE，平均得分提升显著（如 Claude+LongCat 从 67.08 升至 75.52）。消融表明技能进化贡献了约 4 个绝对点的提升。人类评估（2400 张图）也显示偏好 COMFYCLAW。技能分析发现，进化技能占技能读取的 50%，且在 DPG/GenEval2 上依赖度更高。工作流编辑中仅 39% 为 Prompt 修改，其余涉及图拓扑、LoRA 选择等，证明优化不仅限于提示工程。局限性在于仅支持图像生成，视频工作流因计算和时序复杂性未涉及。</div><div class="en">—</div><figure><img src="assets/2607.01709/fig2.webp" alt="fig2"><figcaption>Figure 3: Qualitative comparison across methods on six prompts spanning five capability categories. Each column is a prompt (header shows category and full description); rows are Base (single-pass baseline) and Ours (COMFYCLAW, green border). COMFYCLAW more reliably realises object counts, spatial relations, scene-text accuracy, and fine-grained attribute control.</figcaption></figure>
+</body></html>

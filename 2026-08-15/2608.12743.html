@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spatial Memory Agent: Experience-Grounded Procedure Memory for Spatial Intelligence</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Spatial Memory Agent: Experience-Grounded Procedure Memory for Spatial Intelligence</h1>
+<p class="meta">Haokai Zhang, Yuhang Ding, Yunshu Zhou, Xinze Du, Shengtao Zhang, Zhiyue Zhao<br>
+<a href="http://arxiv.org/abs/2608.12743v1">abs</a><a href="https://arxiv.org/pdf/2608.12743v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给“冻结模型自我进化”的赛道又添了一把火，但这次没烧参数，烧的是内存。SMA 的核心逻辑简单粗暴：别改权重，别调工具，靠“经验复盘”来涨智商。作者很聪明地避开了昂贵的 SFT 和 RL，转而搞“经验蒸馏”，把验证过的空间推理过程变成可复用的 Lesson。不过，这招有个隐形门槛：你得有个能验证答案的环境（verifiable spatial environment），不然“经验”从哪来？这就像让盲人摸象前先给个标准答案，再让他总结规律，虽然高效，但泛化性可能受限于环境的可验证性。相比那些动不动就微调几亿参数的 SpatialVLM，SMA 更像是在做“考前突击笔记”，对推理时的算力友好，但对环境依赖不小。总的来说，是个实用的工程化思路，但别指望它能解决所有空间推理的硬骨头，尤其是当环境不可验证时，这套机制可能就成了无源之水。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">当前提升 VLM 空间推理能力主要走两条路：一是后训练，比如 SpatialVLM 通过指令数据微调 (Chen et al., 2024)，RoboSpatial 结合 2D/3D 数据训练 (Song et al., 2026)；二是智能体范式，调用外部工具如深度估计或 3D 重建 (S-Agent, Dai et al., 2026; SpaceTools, Chen et al., 2026)。前者依赖参数更新，成本高且易遗忘；后者推理时依赖外部专家工具，增加了系统复杂度和延迟。作者想探索第三条路：冻结 VLM 能否在不改权重、不依赖外部工具的情况下，通过外部记忆库实现自我进化？这不仅是效率问题，更是迁移学习的关键——不是死记硬背实例，而是提炼可复用的经验。现有自进化记忆方法多针对文本智能体 (Chhikara et al., 2025; Xu et al., 2025)，缺乏针对空间推理的可靠性评估，SMA 试图填补这一空白，解决空间推理中经验难以复用和评估的问题。</div><div class="en">—</div><figure><img src="assets/2608.12743/fig2.webp" alt="fig2"><figcaption>Figure 2 Conceptual overview of training-free spatial intelligence growth with the Spatial Memory Agent (SMA). SMA leaves the frozen VLM parameters unchanged, writes verifier-grounded spatial experience into a reusable memory bank, estimates the transfer reliability of each memory, and retrieves the most reliable procedures for read-only deployment on new spatial tasks.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">SMA 框架分为经验获取和只读部署两阶段。首先，在可验证环境中，冻结 VLM 解决问题，Verifier 给出奖励。Reflection 模型将 rollout 压缩为结构化记忆卡（任务、摘要、可迁移 Lesson），采用 One-Pass Memory Writing 避免冗余。核心创新在于 Transfer Reliability Score (TRS) 机制：初始值均匀，后续根据访问次数和累积奖励在线校准，区分了“表面相似”与“实际有效”。检索时采用两阶段策略：先用语义相似度过滤候选，再用 TRS 加权排序，确保高可靠性经验优先被调用。部署阶段完全冻结，记忆库不再写入，仅利用校准后的 TRS 指导推理。这种设计将空间推理从“语义匹配”转变为“证据加权的程序选择”，既保留了冻结模型的稳定性，又通过外部记忆实现了动态优化。记忆卡包含任务、摘要和可迁移 Lesson，不暴露预测或答案，防止数据泄露。</div><div class="en">—</div><figure><img src="assets/2608.12743/fig3.webp" alt="fig3"><figcaption>Figure 3 System methodology and workflow of the Spatial Memory Agent (SMA). During memory writing, a frozen vision-language model solves verifiable spatial problems and a reflection step compresses each rollout into a procedural memory. During read-only deployment, semantic similarity filters the memory bank to retrieve candidates, while the verifier-derived transfer reliability score (TRS) ranks those candidates before they guide new tasks; model parameters and the memory bank remain unchanged during deployment.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在 5 个空间基准（RoboSpatial, ERQA, Omni3D, SAT, EmbSpatial）和 4 个 Qwen 冻结模型上进行。对比基线包括无记忆、RAG、MemP 及 MemRL 变体。SMA 在 20 次评估中大部分取得最高精度，如 Qwen3.6-27B 上平均提升 1.7-2.9 点。消融显示，移除语义过滤或 TRS 会导致精度显著下降，证明结构化记忆和可靠性校准缺一不可。One-Pass 写入比 Continual 写入更高效，冗余更低。跨模型和跨基准的迁移测试表明，记忆库具有泛化能力，但增益依赖源目标相似度。定性分析显示，高 TRS 记忆能引导模型关注几何关系而非表面语义。整体表明，外部可迁移课程记忆为空间自进化提供了无参数更新的实用路径。</div><div class="en">—</div><figure><img src="assets/2608.12743/fig1.webp" alt="fig1"><figcaption>Figure 1 Performance comparison of SMA and evaluated memory baselines across seven spatial benchmarks (RoboSpa- tial, ERQA, Omni3D, SAT, SITE-image, ViewSpatial, and EmbSpatial) plus their macro average. Each of the four radial panels corresponds to one frozen base model, and each benchmark sector reports the accuracy of all evaluated memory methods for that model panel.</figcaption></figure>
+<figure><img src="assets/2608.12743/fig4.webp" alt="fig4"><figcaption>Figure 4 Hyperparameter sensitivity and transfer-reliability diagnostics for Qwen3.6-27B.</figcaption></figure>
+<figure><img src="assets/2608.12743/fig5.webp" alt="fig5"><figcaption>Figure 5 Transfer diagnostics: similarity reduction and atomic spatial ability gains across the evaluated benchmarks and base models.</figcaption></figure>
+<figure><img src="assets/2608.12743/fig6.webp" alt="fig6"><figcaption>Figure 6 Memory-writing protocol scaling of Qwen3.6-27B over RoboSpatial, ERQA, Omni3D, EmbSpatial and SAT across ten passes. Compared with One-Pass Memory Writing, Continual Memory Writing expands bank size and redundancy while lowering TRS-update coverage.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2608.12743/fig7.webp" alt="fig7"><figcaption>Figure 9 Omni3D: successful transfer for 3D spatial reasoning.</figcaption></figure>
+<figure><img src="assets/2608.12743/fig8.webp" alt="fig8"><figcaption>Figure 10 Omni3D: successful transfer for 3D spatial reasoning.</figcaption></figure>
+<figure><img src="assets/2608.12743/fig9.webp" alt="fig9"><figcaption>Figure 11 SAT: successful transfer for temporal spatial reasoning.</figcaption></figure>
+<figure><img src="assets/2608.12743/fig10.webp" alt="fig10"><figcaption>Figure 12 SAT: successful transfer for temporal spatial reasoning.</figcaption></figure>
+</body></html>

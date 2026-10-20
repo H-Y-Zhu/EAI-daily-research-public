@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ImplicitRDP: An End-to-End Visual-Force Diffusion Policy with Structural Slow-Fast Learning</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>ImplicitRDP: An End-to-End Visual-Force Diffusion Policy with Structural Slow-Fast Learning</h1>
+<p class="meta">Wendi Chen, Han Xue, Yi Wang, Fangyuan Zhou, Jun Lv, Yang Jin<br>
+<a href="https://arxiv.org/abs/2512.10946">abs</a><a href="https://arxiv.org/pdf/2512.10946">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇 ImplicitRDP 试图用端到端架构解决视觉与力觉的频率鸿沟，听起来很美好，但多模态融合常因模态坍塌而失效。作者用虚拟目标正则化强行拉回力觉权重，算是个聪明的“物理外挂”。相比 RDP 的层级设计，它省去了中间潜在空间的压缩，但也对力控噪声更敏感。硬件上特制的柔性指尖虽有效，却暗示了纯算法在物理交互上的局限性。整体是个扎实的改进，但“端到端”的泛化能力仍需更多任务验证，别指望它能直接通吃所有接触场景。此外，速度预测和欧拉角的选择虽然提升了稳定性，但也增加了工程实现的复杂度。对于追求极致性能的研究者来说，这是一个值得参考的架构，但对于通用性而言，它依然高度依赖特定的硬件配置和任务设定。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">人类操作依赖视觉的全局规划和力觉的局部精细控制，但两者频率差异巨大。现有 Diffusion Policy [1] 仅靠视觉，在接触任务中因缺乏力反馈而容易失败，如翻盒子时用力过猛。Reactive Diffusion Policy [6] 虽引入层级结构，但慢策略生成的潜在动作会压缩空间信息，导致快策略“失明”，且层级间误差累积严重。此外，端到端模型常出现模态坍塌，过度依赖单一信号。因此，亟需一种能统一处理异步信号、避免信息瓶颈且能自适应调节模态权重的架构，以实现在复杂接触场景下的鲁棒控制。</div><div class="en">—</div><figure><img src="assets/2512.10946/fig1.webp" alt="fig1"><figcaption>Fig. 1. Structural Slow-Fast Learning: we leverage a temporally causal structure to enable end-to-end closed-loop force-based control within an action chunk. Virtual-target-based Representation Regularization: we further incorporate virtual target prediction as an auxiliary task to prevent modality collapse.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心是 Structural Slow-Fast Learning (SSL) 和 Virtual-target-based Representation Regularization (VRR)。SSL 将低频视觉 token 与高频力觉 token 拼接，利用因果注意力掩码确保力觉只能关注当前及过去信息，避免未来泄露。力觉编码采用 GRU 保持时序因果，推理时通过 DDIM 缓存慢观测实现 chunk 内闭环。VRR 模块不直接预测力，而是基于顺应控制理论预测虚拟目标 $x_{vt}$，将其映射到动作空间。虚拟目标通过自适应刚度加权，力大时权重高，力小时忽略噪声，从而防止模态坍塌。此外，采用速度预测替代 epsilon 预测，并使用欧拉角表示旋转，进一步提升了训练稳定性和动作平滑度。具体而言，虚拟目标计算公式为 $x_{vt} = x_{real} + K^{-1}f_{ext}$，其中刚度 $K$ 随力的大小动态调整。这种设计使得网络在自由运动时关注位置，接触时关注力，实现了物理意义明确的表征学习。</div><div class="en">—</div><figure><img src="assets/2512.10946/fig2.webp" alt="fig2"><figcaption>Fig. 2. Network Architecture of ImplicitRDP. We enforce a temporally causal structure using a GRU for force signal encoding and a causal attention mask for action-force interaction, which enables structural slow- fast learning.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在翻盒子和拨开关两个接触丰富任务上测试，各 40 次演示。基线包括 DP [1] 和 RDP [6]。结果显示，ImplicitRDP 在翻盒子上成功率 18/20，RDP 为 16/20，DP 为 0/20。开关任务上 ImplicitRDP 同样达到 18/20，优于 RDP 的 10/20。消融实验表明，移除 SSL 会导致开环控制失败，移除 VRR 则性能下降。注意力可视化显示，VRR 帮助模型正确分配视觉与力觉权重。速度预测和欧拉角组合在稳定性上表现最佳。此外，硬件上定制的柔性指尖确保了接触信号的清晰度，这对力控学习至关重要。</div><div class="en">—</div><figure><img src="assets/2512.10946/fig4.webp" alt="fig4"><figcaption>Fig. 4. Box Flipping Task and Failure Cases. The goal is to push a thin phone box against a fixture to flip it upright while maintaining a delicate force limit (&lt; 14N). Vision-only or open-loop baselines lack closed-loop, force-based adjustment and apply excessive force, resulting in squeezing the fingertip. ImplicitRDP successfully utilizes the force feedback to complete the task safely.</figcaption></figure>
+<figure><img src="assets/2512.10946/fig5.webp" alt="fig5"><figcaption>Fig. 5. Switch Toggling Task and Failure Cases. The robot has to locate and apply a specific force to toggle a circuit breaker switch. DP tends to initiate the toggling motion prematurely before the triggering force threshold is reached, while RDP often misses the precise contact location due to latent compression errors. ImplicitRDP accurately approaches the switch and perceives force to toggle the switch successfully.</figcaption></figure>
+<figure><img src="assets/2512.10946/fig6.webp" alt="fig6"><figcaption>Fig. 6. Attention Weight Visualization. We visualize the summed attention weights of visual tokens and force tokens from the first transformer layer in the switch toggling task. The weights are averaged over all heads and all queries. A sliding window of size 10 is applied to smooth the curves.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2512.10946/fig3.webp" alt="fig3"><figcaption>Fig. 3. Hardware Setup. The system utilizes a Flexiv Rizon 4s robot arm. A handle and button are mounted between the seventh joint and 6-axis F/T sensor for kinematic teaching. We also design a custom compliant fingertip to ensure distinctive reactivity signals during contact-rich interactions.</figcaption></figure>
+</body></html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IL-ACT: Imitation Learning with Adaptive Cartesian Tracking Control for a 30-ton Excavator</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>IL-ACT: Imitation Learning with Adaptive Cartesian Tracking Control for a 30-ton Excavator</h1>
+<p class="meta">Mehdi Heydari Shahna, Seihun Kim, Soyi Jung, Soohyun Park, Jouni Mattila, Joongheon Kim<br>
+<a href="http://arxiv.org/abs/2609.16696v1">abs</a><a href="https://arxiv.org/pdf/2609.16696v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 30 吨挖掘机装了个“大脑”，但别指望它能去工地挖土，毕竟还在 Simscape 里跑。核心是把模仿学习（IL）和自适应控制（ACT）硬凑在一起，试图解决液压系统的滞后和不确定性。亮点是那个“锚定”策略和增益估计，理论上能修正误差。但吐槽点也很明显：纯仿真，没上真机；预训练权重效果参差不齐；虽然 RMSE 低了，但最大误差有时候反而高了，典型的“平均表现好，极端情况拉胯”。对于 Embodied AI 圈来说，这算是个稳健的工业控制案例，但离“端到端”还差得远，更像传统控制加了个神经网络前馈。这种“混合架构”在学术界很常见，但在工业界落地前，还得先过真机这一关，毕竟液压油的脾气可不是仿真器能完全模拟的。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">自主挖掘机控制难在液压执行器的滞后、耦合运动学和环境不确定性。现有工作多集中在轨迹优化 [1]、模型预测控制 [2] 或数据驱动逆控制 [3]，但往往忽略了实际液压响应的动态变化。模仿学习虽能利用专家演示 [5]-[8]，但存在分布偏移和因果混淆问题 [13]。自适应控制虽能补偿不确定性 [14]-[17]，但单独使用样本效率低。本文旨在结合 IL 的泛化能力和 ACT 的鲁棒性，解决 30 吨级挖掘机在复杂工况下的精准跟踪问题，弥补单纯 IL 在动态补偿上的不足。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体框架分离线策略训练和在线自适应跟踪。离线阶段，用操作员遥测数据训练一个 14 输入 4 输出的全连接网络，输出名义关节速率，采用“锚定”设计确保零动作时输出为零，避免漂移。在线阶段，引入自适应笛卡尔跟踪（ACT）模块：首先计算笛卡尔误差，通过反馈增益生成修正速度；其次，通过门控机制估计增益和偏置，补偿液压阀滞、摩擦等非线性响应，这是核心难点；最后，共享停止距离控制器（Governor）确保关节参考在安全范围内，防止超限。关键创新在于将名义策略与反馈校正解耦，并通过估计器动态调整控制律，而非单纯依赖神经网络拟合。这种设计既保留了 IL 的轨迹生成能力，又通过传统控制理论保证了稳定性，属于“旧瓶装新酒”的典型实践。</div><div class="en">—</div><figure><img src="assets/2609.16696/fig1.webp" alt="fig1"><figcaption>Fig. 2. IL-ACT architecture: offline policy training and validation, followed by online Cartesian feedback, gain/bias adaptation, and command supervision.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">基于 Simscape 仿真 30 吨挖掘机模型，任务包括 100 个目标点调节、螺旋跟踪及“8”字路径。基线对比了 PID、纯 IL 和 Teacher+ACT。结果显示，IL-ACT 在带液压扰动下完成所有目标，耗时比 Teacher+ACT 减少约 13%，终端误差降低 28%。在传感器噪声下，估计器使 RMSE 降低 22%。消融实验表明，遥测初始化优于随机权重，但预训练效果混合。主要发现是自适应增益估计显著提升了抗扰能力，但最大误差有时高于纯 IL，存在精度与稳定性的权衡。此外，实验涵盖了不同速度和负载条件，验证了框架的泛化性，但缺乏真实物理环境测试仍是硬伤。</div><div class="en">—</div><figure><img src="assets/2609.16696/fig2.webp" alt="fig2"><figcaption>Fig. 3. IL-ACT regulation to 100 Cartesian goals with the disturbance.</figcaption></figure>
+<figure><img src="assets/2609.16696/fig3.webp" alt="fig3"><figcaption>Fig. 4. IL-ACT spiral tracking with the hydraulic disturbance.</figcaption></figure>
+</body></html>

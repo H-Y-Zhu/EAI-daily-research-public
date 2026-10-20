@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Immiscible Diffusion Policy: Preserving Multimodal Robot Actions through Label-Free Noise Assignment</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Immiscible Diffusion Policy: Preserving Multimodal Robot Actions through Label-Free Noise Assignment</h1>
+<p class="meta">Xiao Zhang, Yuxin Chen, Zhixuan Liang, Guojian Zhan, Chenran Li, Chenfeng Xu<br>
+<a href="http://arxiv.org/abs/2610.09369v1">abs</a><a href="https://arxiv.org/pdf/2610.09369v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 Diffusion Policy 泼了盆冷水：号称能利用噪声多样性生成多模态动作，实际训练完经常坍缩成单模态，哪怕数据平衡也没用。作者用匈牙利匹配强行给噪声和动作“配对”，把噪声空间整理得井井有条，让不同模态有各自的“专属通道”。虽然没改架构，但效果显著，非主导模态比例提升 6-14 倍。不过，恢复出来的模态成功率略低，算是“保命”但不够“完美”，且对激活时机敏感。这证明了在低维动作空间中，简单的数据噪声耦合比复杂架构改变更有效。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">Diffusion Policy [2] 本应利用不同噪声生成不同轨迹，但实际常坍缩。原因是在低维密集动作空间中，独立噪声配对导致扩散路径混合（miscibility），使去噪器输出平均化响应，抑制模态特异性行为。现有方法多依赖模态标签或修改架构 [3]，难以通用。本文旨在无需标签、不改架构的前提下，通过训练时噪声分配解决模态坍缩，提升策略在分布偏移下的鲁棒性，避免单一模式失效导致任务失败。特别是在机器人规划中，动作空间密集，混合问题更严重，需要针对性解决。</div><div class="en">—</div><figure><img src="assets/2610.09369/fig1.webp" alt="fig1"><figcaption>Fig. 1. Action-noise assignment and action-modality preservation in Push-T. Upper: in low-dimensional action spaces, diffusion paths from different modalities can substantially overlap. Random action-noise pairing in vanilla Diffusion Policy increases path mixing and weakens modality-specific denoising responses. Our batch-wise Hungarian assignment instead introduces modality-dependent organization in the noise space, keeping multiple action modalities reachable without modality labels. Lower: vanilla policy generates trajectories in a single modality, while ours produces a balanced 1:1 distribution. Both policies are trained with the same seed and sampled ten times from a fixed observation. Each column uses the same initial noise.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程在标准 Diffusion Policy 训练基础上增加“噪声分配”模块。先进行少量轮次 Vanilla 训练，随后激活 Hungarian Matching。将 Batch 内标准化后的动作块与采样噪声池进行最优匹配，最小化欧氏距离。这使得噪声空间呈现模态相关结构，不同模态对应不同噪声区域。去噪器因此能学习区分模态的响应，而非混合平均。无需额外数据或梯度更新，仅改变配对逻辑，保持推理不变。具体而言，算法将动作块展平并标准化，计算其与噪声池的排列距离，选择最小总距离的排列。这种显式耦合减少了扩散路径的交叉，使得低维动作空间中原本重叠的模态在噪声域得以分离，从而保留多模态特性。</div><div class="en">—</div><figure><img src="assets/2610.09369/fig2.webp" alt="fig2"><figcaption>Fig. 2. Noise-space organization on Push-T. Noise samples are projected onto modality-related and orthogonal axes and colored by paired-action modality. The orthogonal axis has no specific meaning and is included only for visualization. Hungarian assignment yields clearer modality-dependent structure than independent pairing.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 5 个仿真 +2 个真实人形任务上测试。基线为 Diffusion Policy [2]。指标包括模态分布距离 (TV) 和任务成功率。结果显示，Immiscible 策略在 Push-T 等任务中将非主导模态比例从~2% 提至~35%，真实任务实现 1:1 平衡。四模态任务恢复了完全消失的模态。消融实验表明，激活时机影响平衡与性能，建议在任务能力初步形成后激活。恢复的模态成功率略低，反映学习难度。在 Place Shoe 等任务中，虽然成功率微降，但模态覆盖度显著提升，证明了方法在保持性能的同时增强了多样性。</div><div class="en">—</div><figure><img src="assets/2610.09369/fig3.webp" alt="fig3"><figcaption>Fig. 4. Real-world humanoid tasks. Left: Fruit-to-Plate; right: Can-to-Bin. Rows show the initial state and actions using either arm, corresponding to the two valid modalities in each task.</figcaption></figure>
+<figure><img src="assets/2610.09369/fig4.webp" alt="fig4"><figcaption>Fig. 5. Evolution of modality distributions throughout training. The horizontal axis denotes training epoch. Upper: dominant-modality proportion for three 2-modality tasks, shading denotes standard error; Lower: modality composition for two 4-modality tasks. Results average N seeds from Tab. I, dashed lines mark assignment activation.</figcaption></figure>
+</body></html>

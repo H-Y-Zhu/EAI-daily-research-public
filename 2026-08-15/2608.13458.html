@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fine-Grained Action Recognition with Cross-Attentive Latent Sparse Experts</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Fine-Grained Action Recognition with Cross-Attentive Latent Sparse Experts</h1>
+<p class="meta">Imtiaz Ul Hassan, Tasweer Ahmad, Nik Bessis, Ardhendu Behera<br>
+<a href="http://arxiv.org/abs/2608.13458v1">abs</a><a href="https://arxiv.org/pdf/2608.13458v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇 FineX 给细粒度动作识别（FHAR）来了个“三权分立”。RGB、热力图、骨架图各管一摊，互不隶属，最后用交叉注意力“开会”商量，再用稀疏专家（MoE）“分赃”。虽然效果确实猛，Gym288 长尾提升 7.6 个点，但推理时得跑三个骨干网络，这算力开销对机器人来说是不是有点“虚胖”？不过没搞视觉语言大模型预训练，纯靠结构融合就干翻了 PeVL，说明有时候“少即是多”，别总想着塞进大模型里。这种解耦设计比简单拼接强，但依赖预提取特征，端到端训练潜力未知，且对姿态噪声的鲁棒性仍需验证。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">细粒度动作识别难在“长得像”。现有方法要么只靠 RGB 丢关节细节 [30]，要么只靠骨架丢纹理 [6]。有的把姿态当辅助信号 [38]，有的只在分数层融合 [3]。作者指出热力图（保留空间位置）和骨架图（保留拓扑关系）本质不同，合并就亏了。现有工作没把这两者拆开，导致互补性没挖尽。长尾分布下，单流模型容易忽略稀有类特征，需要更精细的融合机制来区分细微差异。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体分两阶段：先微调冻结三个骨干（RGB 用 R(2+1)D，热力图用 PoseC3D，骨架用 ST-GCN++），再训练融合模块。核心是 Pairwise Cross-Attention，每个流查询另外两个，保留身份交换证据，避免特征混同。接着是 Streamwise Latent Sparse MoE，共享专家库，根据内容路由到 top-k 专家，加负载均衡损失防塌缩。最后平均池化分类。这种设计让每个样本动态选择专家，比固定变换更灵活。特征投影到共享空间后，交叉注意力让 RGB 参考姿态，姿态参考骨架，实现互补。MoE 部分引入瓶颈层和 GELU，确保非线性能力。</div><div class="en">—</div><figure><img src="assets/2608.13458/fig1.webp" alt="fig1"><figcaption>Fig. 1: FineX architecture. Frozen RGB, pose-heatmap, and skeletal-graph back- bones provide pre-cached features, which are projected to a shared space. Pairwise cross-attention contextualises each stream using the other two, after which a shared sparse MoE routes every refined stream representation to its top-k latent experts. The routed outputs are mean-pooled for classification.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 Gym99/288 和 Diving48 上跑。Gym288 长尾最明显，MCA 从 68.6% 提到 76.2%。消融显示交叉注意力和 MoE 都重要。图 4 证明对稀有类提升最大。计算上，虽然三个骨干，但 Stage 2 参数少，比 AIM ViT-L 省 GFLOPs。图 3 显示专家路由与动作类型相关，非随机。相比单流，三流融合在 Gym288 上 MCA 提升显著，证明结构融合有效。</div><div class="en">—</div><figure><img src="assets/2608.13458/fig3.webp" alt="fig3"><figcaption>Fig. 4: Per-class accuracy on Gym288 sorted by training frequency. Top: class-frequency histogram. Bottom: per-class accuracy of FineX vs. the three single- stream backbones. FineX gives the largest gains on rare classes.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2608.13458/fig2.webp" alt="fig2"><figcaption>Fig. 3: Expert routing on Diving48 at both coarse and fine-grained resolu- tions. (a) Sankey diagram summarising dominant expert selections by take-off type, with flow width indicating the number of routed tokens. (b–c) t-SNE visualisation of concatenated stream-level routing weights, with three fine-grained classes per take-off type (up to 150 clips each); the embedding is identical in both panels, differing only in colour/fill. (b) Colour encodes take-off type, and marker shape encodes fine-grained class. (c) Fill indicates the dominant expert (the five most frequently selected experts shown individually, all others grouped as Others); edge colour shows take-off type, and dashed outlines indicate the approximate cluster boundary for each take-off type.</figcaption></figure>
+</body></html>

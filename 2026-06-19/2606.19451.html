@@ -1,0 +1,41 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D-DLP: Self-Supervised 3D Object-Centric Scene Representation Learning</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>3D-DLP: Self-Supervised 3D Object-Centric Scene Representation Learning</h1>
+<p class="meta">Ellina Zhang, Madhaven Iyengar, Amir Zadeh, Chuan Li, Deepak Pathak, David Held<br>
+<a href="http://arxiv.org/abs/2606.19451v1">abs</a><a href="https://arxiv.org/pdf/2606.19451v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文把 2D 的 Deep Latent Particles (DLP) 硬塞进 3D 体素空间，算是给机器人操作补上了“对象中心”的短板。作者没搞花里胡哨的神经辐射场，而是坚持用粒子重构，这点挺硬核。不过，体素化本身就是个内存吞金兽，虽然他们用了 K-means 改进关键点提议，但面对真实世界动态场景还是有点吃力。实验部分在 MimicGen 上赢了 2D 基线，但在 RLBench 上也没能全杀，说明这玩意儿对特定任务依赖挺大。总的来说，是个实用的中间态方案，离真正的通用 3D 世界模型还有距离，但作为下游策略的输入确实比直接喂体素强。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">机器人操作需要理解 3D 几何，但 3D 数据（RGB-D、点云、体素）通常噪声大、维度高。现有 3D 方法要么依赖密集体素（内存爆炸），要么依赖神经渲染（逆问题难解）。2D 对象中心方法（如 SPAIR, SAVi）虽好，但无法恢复遮挡区域或精确 3D 几何（Wang et al., 2022; Luo et al., 2025）。GROOT 等监督方法需要昂贵标注（Zhu et al., 2023）。现有自监督 3D 方法多基于无彩色点云或合成数据，难以直接处理真实世界的 RGB 体素，限制了实际部署。本文旨在填补空白：无需标注，直接从彩色 3D 观测（RGB 体素/RGB-D）学习可解释、可编辑的对象中心表示，以支持下游控制。</div><div class="en">—</div><figure><img src="assets/2606.19451/fig10.webp" alt="fig10"><figcaption>Figure 11. SAVi decompositions on MimicGen RGB-D. Each strip shows, left-to-right: input RGB-D (row 1: RGB, row 2: depth), the method’s reconstruction, and the individual slot reconstructions (Slot 0–7). Across all three scenes, the majority of slots are blank or carry near-uniform mass; the few populated slots either fragment a single object or mix object and background, and the overall reconstruction loses task-relevant scene entities. See Figure 12 for the corresponding SLATE decompositions.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体架构是 VAE 变体，分 Prior、Encoder、Decoder 三阶段。输入是体素网格。<br>1. Prior: 放弃 2D 的 Spatial Softmax (SSM)，因为体素稀疏。提出 Appearance-aware K-means，结合 CIELAB 颜色和归一化位置，聚类生成关键点提议，比纯几何聚类更能对齐物体表面。<br>2. Encoder: 3D CNN 替代 2D，STN 支持三线性采样。预测粒子属性（3D 位置、尺度、透明度、外观特征）。背景特征通过掩码残差编码。<br>3. Decoder: 每个粒子解码为立方 RGBA patch，通过 3D STN 放置到全局网格。使用体素混合（Volumetric compositing）合成最终图像。<br>4. Loss: 重建损失包含 MSE 和 Chroma loss（防止灰度坍塌），加上 KL 散度和稀疏性约束。<br>支持 RGB-D、Occupancy、RGB 体素三种变体。训练时利用重参数化技巧采样噪声潜变量，确保分布平滑。</div><div class="en">—</div><figure><img src="assets/2606.19451/fig1.webp" alt="fig1"><figcaption>Figure 1. 3D-DLP-VC architecture for RGB voxels. An input RGB voxel grid x is encoded into M latent particles z, each containing 3D keypoint positions, bounding-boxes (scale) and appearance features. The decoder renders per-particle foreground objects (FG), segmentation masks, and background (BG) volumes, then composites them into the final reconstruction ˆx.</figcaption></figure>
+<figure><img src="assets/2606.19451/fig2.webp" alt="fig2"><figcaption>Figure 2. 3D-DLP-VC Scene Decomposition. From input RGB voxels, 3D-DLP-VC infers latent particles with explicit attributes (keypoints, scales) and produces object/background masks entirely without supervision, compositing the input scene.</figcaption></figure>
+<figure><img src="assets/2606.19451/fig6.webp" alt="fig6"><figcaption>Figure 7. PyTorch-style implementation of voxel occupancy compositing.</figcaption></figure>
+<figure><img src="assets/2606.19451/fig7.webp" alt="fig7"><figcaption>Figure 8. 3D-DLP-VC encoder architecture. (1) K-means proposals ¯zp are extracted from input voxels x. (2) An appearance encoder uses STN glimpses around proposals to predict refined positions zp, scales zs, and transparencies zt. (3) A second STN extracts initial appearance features ¯zf from final particle crops. (4) In parallel, zp mask the input for background encoder to produce ¯zbg. (5) An interaction encoder processes all attributes/features to output final zf and zbg.</figcaption></figure>
+<figure><img src="assets/2606.19451/fig8.webp" alt="fig8"><figcaption>Figure 9. 3D-DLP-VC decoder architecture. Each particle appearance latent zf decodes to a canonical volume glimpse via 3D CNN. A 3D spatial transformer (STN) then uses spatial attributes zs and zp to scale and position the glimpse on the full-resolution canvas for the final reconstruction ˆx.</figcaption></figure>
+<figure><img src="assets/2606.19451/fig9.webp" alt="fig9"><figcaption>Figure 10. Core geometry used for real-world tabletop rearrangement: plane fitting via RANSAC, canonical UV frame construction, contact-point placement with clearance snapping, and collision-reject sampling with bounded retries.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 GenericShapes, ShapeNetScenes, MimicGen, UW RGB-D 上测试。基线包括 AE, VAE, SAVi, SLATE, EquiDiff, PerAct。指标有 Masked PSNR, IoU, 成功率。<br>结果：3D-DLP-VC 在体素重建上显著优于 AE/VAE（Masked PSNR 提升明显）。消融显示 K-means 优于 SSM，Chroma loss 防止了颜色灰化。下游任务（MimicGen 12 任务，RLBench 10 任务）中，结合 EC-Diffuser 策略，3D-DLP 在多数任务上优于 2D-DLP 和纯体素基线（如 EquiDiff），平均成功率 48.1% vs 30.8%。但在某些精细任务（Close Jar）上略逊于高分辨率 2D 方法。在堆叠、清理等任务上表现突出，证明了 3D 粒子表示对接触推理的价值。</div><div class="en">—</div><figure><img src="assets/2606.19451/fig3.webp" alt="fig3"><figcaption>Figure 3. RGB Voxel Reconstruction Comparison. 3D-DLP-VC vs. non-object-centric baselines (AE: deterministic autoencoder; VAE: variational autoencoder) on input RGB voxels across the various datasets.</figcaption></figure>
+<figure><img src="assets/2606.19451/fig4.webp" alt="fig4"><figcaption>Figure 4. Latent space controllability. Modifying individual particle attributes–3D position (top) and scale (bottom)–directly translates to intuitive scene changes: translation and resizing.</figcaption></figure>
+<figure><img src="assets/2606.19451/fig5.webp" alt="fig5"><figcaption>Figure 6. PyTorch-style implementation of the K-means prior used to obtain voxel-based keypoint proposals.</figcaption></figure>
+</body></html>

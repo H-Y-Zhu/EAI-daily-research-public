@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Not Forgotten: Implementation and Evaluation of a Personalized Episodic Memory for the Humanoid Robot Head Kim</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Not Forgotten: Implementation and Evaluation of a Personalized Episodic Memory for the Humanoid Robot Head Kim</h1>
+<p class="meta">Steve Aschenbrenner, Marcel Heisler, Thomas Sievers, Christian Becker-Asano<br>
+<a href="http://arxiv.org/abs/2607.24190v1">abs</a><a href="https://arxiv.org/pdf/2607.24190v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给具身机器人装了个“记事本”，试图解决大模型社交机器人“金鱼记忆”的尴尬。核心发现是：有了记忆，机器人显得更可信、更温暖，像个“社牛”，而且没触发用户的“恐怖谷”心理。不过，这实验是在看视频里完成的，真实互动效果如何还得打问号。架构上搞了个混合打分，把情感强度算进去，挺有意思，但预填充数据意味着它没真正“学习”用户，只是“背诵”了设定好的偏好。总的来说，证明了记忆是社交润滑剂，但离真正的长期关系还差得远，且视频评估削弱了生态效度，无法验证长期记忆衰减的影响。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">社交机器人需要持久关系，但 LLM 天生无状态 [4]，导致交互断裂。具身形态提高了用户期待 [6]，遗忘会被视为社交失败。现有 RAG/MemGPT 侧重事实检索 [8], [9] 或仿真 [10]，缺乏对人感知影响的实证。特别是记忆是否会被视为监控 [14], [15]。本研究填补了具身 HRI 中记忆对感知影响的黑箱，验证记忆是否真能提升社交属性而不引发不适，解决技术实现与用户体验之间的断层。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">系统基于 Kim 机器人头，微服务架构。ASR 转录后进入记忆模块。记忆模块用 Qdrant 存向量，OpenAI Embedding 编码。关键创新是混合检索打分：余弦相似度 + 记忆强度（时间衰减、访问频率、情感强度）。情感用 Russell 模型标注。Prompt 限制记忆使用自然。存储异步，检索同步。具体而言，记忆强度 S(m) 结合了创建时间、访问次数和最后访问时间，并乘以情感强度因子，确保高情感记忆更持久。检索时先过余弦相似度，再重排序。LLM 接收上下文时，被要求自然使用记忆，避免生硬插入。整个流程通过 Docker 容器化，确保模块解耦。权重设置上，时间衰减权重最高，强调近期记忆。情感强度作为乘法因子，让高情绪事件更抗衰减。这种设计旨在平衡语义相关性与社交重要性，防止无关信息干扰对话流畅性。</div><div class="en">—</div><figure><img src="assets/2607.24190/fig1.webp" alt="fig1"><figcaption>Fig. 1. Humanoid robot head Kim that has been used in this study</figcaption></figure>
+<figure><img src="assets/2607.24190/fig2.webp" alt="fig2"><figcaption>Fig. 2. High-level system architecture. User speech is transcribed, enriched with retrieved episodic context, and passed to the LLM. Storage of new memories runs concurrently in a background thread.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">43 人，被试内设计，视频观看。Baseline 无记忆，Memory 有记忆。用 HRIES 量表。结果：Sociability 显著提升 (d=0.60)，Trust/Warmth 驱动。Disturbance 无变化 (d=0.00)。但整体偏好无显著差异。局限：视频非实时，数据预填充。具体而言，Phase 1 收集偏好存入数据库，Phase 2 观看视频。量表包含 Sociability, Agency, Animacy, Disturbance。Sociability 中 Trustworthy 提升最大。Disturbance 无变化说明未触发隐私担忧。但视频形式限制了实时反馈，且样本多为大学生，推广性受限。统计上使用 Bonferroni 校正，确保结果稳健。配对 t 检验显示 Sociability 差异显著，p &lt; .001，而 Disturbance 无差异。</div><div class="en">—</div><figure><img src="assets/2607.24190/fig3.webp" alt="fig3"><figcaption>Fig. 3. HRIES subscale scores by condition (N = 43). Only Sociability exhibits a visible distributional shift between Baseline (left) and Memory-Enhanced (right). The remaining subscales show largely overlapping distributions.</figcaption></figure>
+</body></html>

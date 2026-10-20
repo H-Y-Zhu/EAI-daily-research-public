@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Failure Detection for Surgical Robot Imitation Policies via Flow-Matching World Modeling</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Failure Detection for Surgical Robot Imitation Policies via Flow-Matching World Modeling</h1>
+<p class="meta">Zhefeng Huang, Yilin Cai, Ankit Patel, Mohammad Hajiha, Brendan Browne, Yue Chen<br>
+<a href="http://arxiv.org/abs/2607.27511v1">abs</a><a href="https://arxiv.org/pdf/2607.27511v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给手术机器人装上了一个“自我体检”的 Flow-Matching 世界模型，号称不用失败数据就能抓错，听起来很美好。FoMo-FD 确实聪明，用成功演示学正常动态，再用逆传输打分，避开了收集罕见失败样本的坑。但别高兴太早，它还是得靠少量成功 rollout 做 conformal calibration，这算不算“无失败数据”的擦边球？而且结果高度依赖 wrist camera，固定视角表现拉胯，说明这玩意儿对“近景”太敏感，离临床部署还有距离。基线对比虽然赢了，但预测误差变体（WM-PE）输得挺惨，说明逆传输打分才是真香。总的来说，是个不错的监控器，但别指望它能替代人类医生，毕竟它只关心动作和视觉是否一致，不关心手术意图对不对。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">手术机器人模仿学习虽然前景广阔，但安全部署仍是噩梦。现有方法要么依赖预设的安全标签 [5], [6]，要么靠策略输出的不确定性 [7], [8] 间接推测，信号太弱。VLM 监控器如 Sentinel [9] 或 SAFE [11] 虽能语义推理，但往往需要失败演示或任务指令，这在真实手术中很难获取。特别是低层执行层面的故障（如抓握滑脱），仅靠任务进度监控无法捕捉。作者指出，现有观察级异常检测 [12], [13] 只看单帧，忽略了时序一致性。因此，需要一种仅凭成功演示就能学习正常动态、并在运行时检测视觉 - 动作不一致的通用监控框架。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分为视觉编码、世界模型训练和运行时检测。首先，利用冻结的 DINOv2 和离线训练的 VAE 将多视角图像压缩为紧凑的潜在张量。核心创新在于 Flow-Matching 世界模型：它不递归预测下一帧，而是基于历史视觉 latent 和动作块（Action Chunk），预测短窗口结束时的 endpoint latent。训练时加入辅助的一步预测损失。检测时，采用逆传输（Inverse Transport）技术，将观测到的 endpoint latent 反向映射回高斯基分布，计算其归一化距离作为非一致性分数（WM-NC），这比直接预测误差（WM-PE）更能捕捉时序动态偏差。阈值通过 conformal calibration 在成功 rollout 上确定，无需失败数据。动作条件化通过 cross-attention 和全局调制结合，确保模型理解意图。</div><div class="en">—</div><figure><img src="assets/2607.27511/fig1.webp" alt="fig1"><figcaption>Fig. 1. Overview of the proposed FoMo-FD framework. Multi-view observations are encoded by a frozen DINOv2 backbone and an offline-trained VAE into compact latent tensors. From successful demonstrations, FoMo-FD trains a flow-matching world model conditioned on the intervening action chunk to predict the endpoint latent of a short execution window. At test time, the observed endpoint latent is scored by inverse transport under the learned nominal dynamics, and the resulting window-level nonconformity score is compared with a calibrated threshold to raise failure alarms.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 dVRK 和 Isaac Sim 的四个任务上测试，涵盖 20 种失败模式（抓取丢失、遮挡等）。对比基线包括预测误差变体 WM-PE 及观察级异常检测 logpZO、RND。结果显示 WM-NC 在 wrist 视角下表现最强，FDR 达 96.6%，FAR 仅 1.3%，显著优于基线。消融实验表明，动作条件化（尤其是结合 cross-attention 和调制）对提升 FDR 至关重要，且预测 horizon K=4 比 K=1 更能积累偏差信号。固定视角表现较弱，说明局部操作动态对失败检测更敏感。计算速度 13.98Hz 满足在线需求，但离线评估为主。</div><div class="en">—</div><figure><img src="assets/2607.27511/fig2.webp" alt="fig2"><figcaption>Fig. 2. Representative observations from the four tasks. Each panel shows the fixed-camera view on the left and the wrist-camera view on the right. Top row: simulated needle pickup and ring over post. Bottom row: real- world tissue retraction and shunt insertion.</figcaption></figure>
+<figure><img src="assets/2607.27511/fig3.webp" alt="fig3"><figcaption>Fig. 3. Qualitative wrist-view score traces across tasks and detector variants. Rows indicate tasks and columns indicate detectors. Blue dashed curves show the N = 19 successful calibration rollouts, red curves show selected failed rollouts, and gray dash-dot lines show calibrated thresholds. The red failed rollouts are selected by a fixed rule: the first two episodes from each failure mode for the corresponding task. Each panel uses its own score scale.</figcaption></figure>
+<figure><img src="assets/2607.27511/fig4.webp" alt="fig4"><figcaption>Fig. 4. Representative failure episodes using the proposed WM-NC wrist-view score. For each example, the score trace is paired with wrist-camera frames corresponding to marked time points on the curve, showing what occurs visually as the failure develops. Horizontal axes indicate rollout time t, and vertical axes indicate rwrist t . Blue dashed curves show successful calibration rollouts, the red curve shows the selected failed rollout, and the gray dash-dot line shows the calibrated threshold.</figcaption></figure>
+<figure><img src="assets/2607.27511/fig5.webp" alt="fig5"><figcaption>Fig. 5. Action conditioning modes are denoted as NoAct, Mod, Tok, and Tok+Mod, corresponding to no action conditioning, global action modulation only, action-token cross-attention only, and their combination.</figcaption></figure>
+<figure><img src="assets/2607.27511/fig6.webp" alt="fig6"><figcaption>Fig. 6. Endpoint prediction horizon ablation. Top: rollout-level FDR; bottom: rollout-level FAR, aggregated across the four tasks for the fixed and wrist views. Increasing the endpoint prediction horizon K substantially improves wrist-view FDR while maintaining low FAR, motivating the use of K = 4 in the main experiments.</figcaption></figure>
+</body></html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VT-WAM: Visual-Tactile World Action Model for Contact-Rich Manipulation</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>VT-WAM: Visual-Tactile World Action Model for Contact-Rich Manipulation</h1>
+<p class="meta">Shuai Tian, Yupeng Zheng, Yuhang Zheng, Songen Gu, Yujie Zang, Yuxing Qin<br>
+<a href="http://arxiv.org/abs/2607.02503v1">abs</a><a href="https://arxiv.org/pdf/2607.02503v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给触觉数据找了个新归宿，不再只是当个“配角”扔进策略网络，而是直接让它参与“世界模型”的构建。VT-WAM 试图用 Flow Matching 把视觉、触觉和动作捏在一起，听起来很丰满，但现实是触觉信号太稀疏，视觉太稠密，模型容易“偏科”。作者搞了个不对称注意力机制，强行让动作查询去关注触觉序列，还加了个训练时的 AVTAG 损失来“纠正”视觉霸权。结果确实不错，成功率干到了 71.67%，比 Fast-WAM 强一大截。不过，这模型对触觉传感器的依赖挺重，而且训练时的“小聪明”（AVTAG）在推理时直接消失，不知道会不会导致训练 - 推理不一致。另外，单任务训练的模式在扩展性上估计得打个问号，毕竟机器人要是换个任务还得重新训，这算不算“费钱费算力”？视觉缓存模式虽然省了未来帧预测，但也牺牲了视觉动态的连贯性，算是个 trade-off。总的来说，这是个在特定场景下很有效的“特化”方案，但通用性有待观察。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">接触丰富操作（Contact-rich manipulation）的核心难点在于局部形变、压力和摩擦，这些信号在视觉上往往不可见或转瞬即逝。现有的视觉主导策略 [1], [2] 在这种场景下容易失效，因为视觉观测通常是稠密的，而触觉信号是稀疏的。虽然有些工作引入了触觉感知 [3], [4], [5]，但大多只是把触觉数据作为输入喂给策略，忽略了触觉形变在时间上的动态演化 [6]。特别是 World Action Models (WAMs) 如 Fast-WAM [9] 虽然能预测视觉动态，但缺乏触觉维度。OmniVTLA [5] 虽然用了触觉，但触觉预测主要用于规划或下游模块，未直接耦合到动作生成的流匹配目标中。这导致在训练时，稠密的视觉信号容易掩盖稀疏但关键的触觉动态，模型倾向于“看”而不是“摸”。VT-WAM 试图解决这个信息不平衡问题，将触觉形变动态直接耦合进动作预测，让模型学会在接触时“摸”而不是“看”。</div><div class="en">—</div><figure><img src="assets/2607.02503/fig1.webp" alt="fig1"><figcaption>Fig. 1. Sparse tactile dynamics provide decisive evidence for contact- rich manipulation. (a) Across six real-world tasks, tactile responses appear mainly around short contact events, making the informative signal tem- porally sparse. (b) By coupling action prediction with tactile deformation dynamics, VT-WAM improves the average success rate from 45.00% with Fast-WAM to 71.67%, with consistent gains on both surface-interaction and constrained insertion tasks.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">VT-WAM 基于统一的 Flow Matching 框架，包含视觉、触觉、动作三个专家模块。数据流上，腕部相机视频经 Wan2.2 VAE 编码，触觉形变经预训练 Tactile VAE 编码，动作块线性投影。核心创新在于 Asymmetric MoT Attention 和 AVTAG。Asymmetric MoT Attention 解决了推理效率问题：动作查询可以关注完整的触觉序列以捕捉接触演化，但视觉只关注第一帧锚点（Visual Anchor），避免了推理时预测未来视觉帧的延迟。这实现了“视觉缓存”模式。AVTAG 则是训练时的辅助损失，计算动作查询对视觉和触觉键的注意力权重，在接触阶段强制触觉注意力高于视觉注意力（Hinge Ranking Loss），防止模型在训练时“偷懒”只看视觉。推理时 AVTAG 移除，但训练学到的注意力偏好保留。整体架构通过 Mask 控制跨模态信息流，确保触觉动态能指导动作，同时视觉提供全局上下文。具体 Mask 设计让视觉专家不接收触觉/动作键，触觉专家只接收首帧视觉，动作专家接收首帧视觉 + 全触觉序列，这种不对称性是关键。</div><div class="en">—</div><figure><img src="assets/2607.02503/fig2.webp" alt="fig2"><figcaption>Fig. 2. Overview of VT-WAM. (a) Joint visual-tactile-action flow matching with three modality-specific experts connected by Asymmetric MoT Attention. (b) Attention masks in Asymmetric MoT Attention during training and inference. (c) Contact-gated AVTAG applies a training-only hinge ranking loss that encourages action queries to prioritize tactile evidence during contact phases.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在 6 个真实世界接触丰富任务上进行，包括表面交互（擦白板、擦花瓶、削黄瓜）和受限插入（插插头、刷卡、插管）。基线包括 DP+Tactile [10], RDP [3], π0.5 [2], OmniVTLA [5], Fast-WAM [9]。VT-WAM 平均成功率 71.67%，显著优于 Fast-WAM (45.00%) 和 OmniVTLA (35.83%)。在触觉预测质量上，VT-WAM 的形变误差更低，方向一致性更高。消融实验表明，引入触觉动态（M3 vs M0）能提升性能，而 AVTAG 进一步提升了接触恢复能力（如擦花瓶时接触丢失后能重新建立）。这证明了建模触觉演化比单纯输入触觉观测更有效。不过，实验主要集中在单任务演示，多任务泛化能力未验证，且依赖特定传感器配置，泛化到不同触觉设备可能需重新校准。</div><div class="en">—</div><figure><img src="assets/2607.02503/fig3.webp" alt="fig3"><figcaption>Fig. 4. Overview of real-world contact-rich manipulation tasks. We evaluate VT-WAM on six real-world tasks covering two interaction regimes: surface-interaction tasks and constrained insertion tasks.</figcaption></figure>
+<figure><img src="assets/2607.02503/fig4.webp" alt="fig4"><figcaption>Fig. 5. Visual-Tactile Prediction Results across Six Tasks. For visualization, VT-WAM predicts wrist camera observations together with tactile deformation fields. Blue denotes ground truth, and orange indicates prediction.</figcaption></figure>
+</body></html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vision-TL-Action: Neuro-Symbolic Trajectory Generation from Visual Observations and Temporal Logic</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Vision-TL-Action: Neuro-Symbolic Trajectory Generation from Visual Observations and Temporal Logic</h1>
+<p class="meta">Zezhi Liu, Zhiwei Zheng, Hanqian Luo, Deyun Qin, Shizhen Wu, Yongchun Fang<br>
+<a href="http://arxiv.org/abs/2607.26770v1">abs</a><a href="https://arxiv.org/pdf/2607.26770v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图用视觉替代时序逻辑规划中的“上帝视角”几何信息，算是给 TeLoGraF 加了个视觉滤镜。虽然提出了神经符号融合，但本质上还是靠采样覆盖来刷成功率，单条轨迹性能其实不如已知状态基线。训练时用了特权信息（物体投影），推理时却号称端到端，有点“训练时作弊，推理时硬撑”的嫌疑。不过，在候选集够大时能追平甚至反超，说明视觉特征确实承载了足够的语义，只是单样本生成能力还需提升。这种“以量取胜”的策略在仿真中有效，但落地到真实机器人时，采样成本和时间约束可能是个大坑。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有时序逻辑（TL）规划器如 TeLoGraF (Meng and Fan 2025) 依赖精确物体几何，绕过了感知到符号的绑定，这在真实视觉场景中不可行。而 VLA 模型（如 RT-2, Brohan et al. 2023）虽能处理视觉指令，却缺乏显式的 STL 约束，难以保证任务的安全性和时序逻辑。本文旨在解决视觉观测下如何生成满足复杂时序逻辑的轨迹，填补感知与形式化规划间的鸿沟，实现无需特权几何信息的端到端规划。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程为：坐标无关的 TL 图编码 -&gt; 多视图视觉 Token 生成 -&gt; 双向交叉注意力融合 -&gt; Flow Matching 轨迹生成。创新点包括：1) 用物体 ID 嵌入替代坐标，构建无坐标 TL 图，避免泄露几何信息；2) 视觉 Token 仅含归一化网格和视角 ID，保留空间可寻址性；3) 引入双向交叉注意力实现图与视觉互条件，让逻辑节点查询视觉证据；4) 训练时添加谓词到对象的接地损失，强制注意力聚焦目标物体。最终通过流匹配生成轨迹，利用 ODE 积分从噪声分布映射到数据分布。</div><div class="en">—</div><figure><img src="assets/2607.26770/fig1.webp" alt="fig1"><figcaption>Figure 1: System overview of Vision-TL-Action. The model encodes a coordinate-free TL graph and multi-view visual observations into TL node and visual tokens, fuses them through bidirectional cross-attention, and conditions a flow-matching Temporal U-Net on the fused feature and encoded initial state to generate candidate trajectories by ODE integration.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 Panda 操作和 AntMaze 导航仿真域测试。基线包括 Oracle State 和 Visual Fusion。指标为 Success@K。结果显示 Vision-TL-Action 在 Panda 上 Success@1024 达 67.45%，优于 Oracle 的 59.11%；AntMaze 上 96.35% 接近 Oracle 的 96.88%。消融表明视觉输入和接地损失显著提升性能，但单样本成功率仍低于已知状态，需依赖采样多样性。分辨率研究指出 16x16 网格对 AntMaze 至关重要，防止目标碰撞。</div><div class="en">—</div><figure><img src="assets/2607.26770/fig2.webp" alt="fig2"><figcaption>Figure 2: Final-checkpoint visual-input interventions at seed 1007. Bars report fixed-task success and error bars are 95% task-bootstrap intervals. Panda retains substantial informa- tion in either camera, whereas AntMaze depends primarily on the task-specific target raster.</figcaption></figure>
+<figure><img src="assets/2607.26770/fig3.webp" alt="fig3"><figcaption>Figure 3: Three-seed Success@K over shared candidate pre- fixes. Exact state produces stronger single samples, especially on AntMaze, while the proposed visual model closes or re- verses the gap as candidate diversity increases. The bands show one sample standard deviation across sampling seeds. Panda also includes its same-resolution visual-fusion base- line.</figcaption></figure>
+<figure><img src="assets/2607.26770/fig4.webp" alt="fig4"><figcaption>Figure 4: Graph-to-vision grounding in Panda (top) and AntMaze (bottom). The TL nodes state their operator, interval, predicate, and object identity. The two visual columns show Panda custom and bird’s-eye views and AntMaze map and target views. Outlined matrix cells mark the graph-consistent object; a graph-only identity exchange moves the dominant correspondence while both visual views remain fixed.</figcaption></figure>
+<figure><img src="assets/2607.26770/fig5.webp" alt="fig5"><figcaption>Figure 5: Three-seed mean Success@K by TL formula family at the maximum candidate set size. The four axes are reach/stay, conjunction/disjunction, sequential, and until tasks; values are percentages on the same fixed task parti- tions used in Table 1.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2607.26770/fig6.webp" alt="fig6"><figcaption>Figure 6: AntMaze representation-resolution diagnostic. The first training stage occupies epochs 0–99; the 30-epoch condition- interface adaptation is plotted continuously at epochs 100–129 rather than restarting the horizontal axis. Increasing spatial resolution eliminates target-token collisions, while position/view encoding and predicate grounding convert that resolution into planning performance.</figcaption></figure>
+<figure><img src="assets/2607.26770/fig7.webp" alt="fig7"><figcaption>Figure 7: Controlled seed-1007 module study. Position encoding and grounding are complementary on Panda. On the collision- prone 4 × 4 AntMaze grid, the same modules cannot recover planning performance; moving to native 16 × 16 tokens makes their semantic supervision actionable.</figcaption></figure>
+<figure><img src="assets/2607.26770/fig8.webp" alt="fig8"><figcaption>Figure 8: Compact task and robustness diagnostics. Top: three-seed performance by TL formula family. Bottom: training-data sufficiency and the same redundant syntax-branch intervention applied to exact-state and final visual checkpoints. All curves use nested candidate prefixes.</figcaption></figure>
+<figure><img src="assets/2607.26770/fig9.webp" alt="fig9"><figcaption>Figure 9: Development and grounding diagnostics. Top: Panda internal checkpoint progression at seed 1007; V2, V3, and V4 denote node fusion, final-block adaptation, and condition-interface adaptation. Bottom: grounding-stage op- timization, where solid lines include spatial position encod- ing and dashed lines omit it. The AntMaze curves use the earlier 4×4 gate and motivate the native 16×16 experiment.</figcaption></figure>
+<figure><img src="assets/2607.26770/fig10.webp" alt="fig10"><figcaption>Figure 10: Paired grounding improvements over visual fu- sion. Points are mean task-level differences and bars are 95% bootstrap intervals.</figcaption></figure>
+</body></html>

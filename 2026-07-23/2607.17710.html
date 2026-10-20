@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planning with Transformers: Chain of Computation and Structured Context Windows</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Planning with Transformers: Chain of Computation and Structured Context Windows</h1>
+<p class="meta">Ehsan Futuhi, Nathan R. Sturtevant<br>
+<a href="http://arxiv.org/abs/2607.17710v1">abs</a><a href="https://arxiv.org/pdf/2607.17710v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">LLM 被捧为全能，一做规划就露馅。这篇论文没整虚的，直接给 Transformer 加了个“外部内存条”和“指针”，强迫它像图灵机一样一步步算。COC 架构在 BlocksWorld 上刷了 99.89%，看着挺香，但 Hanoi 塔里算术一崩就歇菜。本质是用结构化上下文窗口（SCW）规避长文本检索难题，把规划拆解成迭代指令。虽然解决了长程泛化问题，但把规划变成了“写代码”式的显式迭代，离真正的端到端具身智能还有距离，更像是在模拟算法而非学习智能。这种“外挂”式架构虽然有效，但也暴露了纯 LLM 在逻辑推理上的先天不足，理论上的图灵完备性在训练数据面前显得苍白。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">LLM 在对话代码上很强，但规划任务（Valmeekam et al., 2023; Shojaee et al., 2025）表现糟糕，复杂问题直接归零。理论上 Transformer 是图灵完备的（Lewandowski et al., 2026; Giannou et al., 2023），但实际训练学不会算法。现有方法要么依赖外部 Oracle，要么上下文窗口无限增长导致检索失效（Lehnert et al., 2024）。核心矛盾是理论能力与实证性能的鸿沟，需要一种架构让模型在有限上下文中迭代执行算法，而非单次生成。这揭示了当前 LLM 规划能力的瓶颈在于架构限制而非模型大小，且模型常依赖捷径学习而非理解任务结构。</div><div class="en">—</div><figure><img src="assets/2607.17710/fig1.webp" alt="fig1"><figcaption>Figure 1: Comparison between standard LM planning and Chain of Computation (COC). Instead of generating an entire plan in a single pass from the full context, COC employs a smaller LM that iteratively processes one instruction from a structured context window (SCW), updates the SCW, and generates the next pointer, pt+1. The process terminates when pt = −1, after which the complete action sequence is extracted. The example shown corresponds to the Tower of Hanoi (TOH) domain.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">提出 Chain of Computation (COC) 架构。核心是迭代循环：LM 读取 SCW（Structured Context Window）中的当前指令，生成新指令、动作和下一指针。SCW 作为外部记忆，指针机制确保每次输入大小恒定，避免长上下文检索退化。LM 需学习规划策略、世界模型和算术。支持两种模式：(1) 追加式磁带（类图灵机），(2) 确定性下推自动机（PDA，仅栈操作）。训练时优化指令 - 输出对，测试时泛化到未见实例。通过指针控制可见上下文，降低计算成本。指针由 LM 生成，允许模型决定访问 SCW 的哪部分，终止于指针 -1。训练目标为 next-token prediction，确保模型能泛化到未见变量。</div><div class="en">—</div><figure><img src="assets/2607.17710/fig2.webp" alt="fig2"><figcaption>Figure 3: Mean success rate on TOH across ran- dom hold-out percentages of the training data, with error bars showing ± one standard devia- tion over five random seeds.</figcaption></figure>
+<figure><img src="assets/2607.17710/fig5.webp" alt="fig5"><figcaption>Figure 6: One iteration of the planning loop when planning and arithmetic operations are separated. The planning language model generates symbolic instructions, while the arithmetic operations are performed by a dedicated arithmetic module before the updated prompt is written back to the tape.</figcaption></figure>
+<figure><img src="assets/2607.17710/fig6.webp" alt="fig6"><figcaption>Figure 7: Prompt size and cumulative context-window size over planning steps for BlocksWorld, Extended BlocksWorld, Pancake, and Tower of Hanoi (TOH). The x-axis shows the planning step. The context-window curve measures the initial prompt plus all model-generated text up to that step, while the prompt-size curve measures the prompt at the current step.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 BlocksWorld、Pancake、TOH 上测试。BlocksWorld/Pancake 仅需少量训练实例即达 99.89% 成功率。TOH 在未见数字时算术出错导致失败（Figure 3）。引入符号算术或 PDA 架构后，TOH 20 盘问题 100% 解决（Figure 4）。Figure 7 显示 COC 上下文大小恒定，而标准方法随步骤增长。证明失败主因是算术而非策略，且 PDA 形式消除了指针计算需求。数据量减少至 30 实例时性能仍优于大模型基线。Extended BlocksWorld 也验证了泛化能力，仅在极端复杂度下偶有失败。</div><div class="en">—</div><figure><img src="assets/2607.17710/fig3.webp" alt="fig3"><figcaption>Figure 4: Planning instructions required for training to solve TOH instances up to disk count n. The x-axis is logarithmic.</figcaption></figure>
+<figure><img src="assets/2607.17710/fig4.webp" alt="fig4"><figcaption>Figure 5: Decoder-only Transformer architecture used as the language model within the planner.</figcaption></figure>
+</body></html>

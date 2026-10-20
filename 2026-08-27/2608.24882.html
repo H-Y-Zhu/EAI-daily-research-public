@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Latent Action as Intention Enables Efficient Future Imagination for World Action Models</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Latent Action as Intention Enables Efficient Future Imagination for World Action Models</h1>
+<p class="meta">Xiang Li, Yupeng Zheng, Songen Gu, Huailiang Ma, Feng Yu, Xian Nie<br>
+<a href="http://arxiv.org/abs/2608.24882v1">abs</a><a href="https://arxiv.org/pdf/2608.24882v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图在具身智能的“世界模型”赛道里搞平衡术。现有的 Joint-WAM 虽然能预测未来，但推理慢得像在等咖啡煮好；Fast-WAM 虽然快，但少了未来想象，泛化性差得像没带导航的司机。LAWA 提出用“潜在动作”代替“未来视频”作为意图，这招挺妙，相当于把高清电影压缩成了剧情梗概，既保留了剧情走向（任务进展），又省了渲染显卡的算力。不过，这玩意儿还是得靠大量无动作的自监督视频预训练来喂饱，否则效果不如 Joint-WAM，说明“压缩”是有损的。而且推理速度虽然比 Joint-WAM 快 43%，但比 Fast-WAM 还是慢了一倍，这“效率”到底算不算革命性突破，还得看具体场景。总的来说，是个务实的改进，但别指望它能替代所有视频生成模型。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">具身智能的核心难点在于机器人不仅要反应当前，还要理解交互如何展开。世界动作模型（WAMs）通过预测未来视觉动态来辅助决策，但存在明显的效率瓶颈。Joint-WAM 类方法（如 Bi et al. 2026 提到的 Motus 等）虽然能显式预测未来观测，但测试时迭代去噪未来视频导致推理延迟巨大，阻碍了实机控制。Fast-WAM（Yuan et al. 2026b）试图移除测试时的未来视频分支以提升速度，但我们的对照实验显示，这种“短视”策略在少样本和分布外场景下泛化性显著下降。现有范式在“泛化性能”与“推理效率”之间难以兼得：保留观测空间想象成本太高，丢弃则丢失任务进展的显式表征。因此，研究动机在于寻找一种既能保留未来意图表征，又能避免昂贵视觉生成的中间路径，以平衡性能、泛化与延迟。</div><div class="en">—</div><figure><img src="assets/2608.24882/fig1.webp" alt="fig1"><figcaption>Figure 1: Conceptual and quantitative comparison of WAM paradigms. Fast-WAM, our primary performance baseline, removes test-time future imagination but generalizes worse; Joint-WAM predicts future observations and serves as the efficiency reference. LAWA treats latent actions as future intentions, substantially improving performance over Fast-WAM while matching Joint-WAM at lower latency. Moreover, LAWA obtains larger downstream gains from action-free data than both alternatives under matched video exposure and paradigm-specific pre-training objectives.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">LAWA 的整体架构将未来想象从观测空间迁移到紧凑的潜在动作空间。首先，构建一个离散潜在动作 Tokenizer，基于 ViPRA（Routray et al. 2026）改进，利用 DINOv2（Oquab et al. 2023）提取特征，通过差分编码帧间动态，并映射到可学习码本生成离散 Token。为了强化交互区域表征，引入了基于 SAM 2（Ravi et al. 2025）的掩码预测辅助任务，自动标注手部和操作器区域，防止 Tokenizer 仅关注静态外观。其次，进行动作无关的自监督预训练，对齐不同数据源的运动速度分布，并加权采样保留机器人领域 grounding。在策略训练阶段，冻结 Tokenizer，通过多模型联合注意力机制（Multi-model Joint Attention）联合训练视频、潜在动作和动作去噪专家。结构化注意力掩码确保动作专家能利用演化的潜在意图，但无法访问未来视频信息。推理时，丢弃未来视频分支，仅联合去噪潜在意图和可执行动作块，从而在不生成未来观测的情况下保留未来感知的动作生成能力。</div><div class="en">—</div><figure><img src="assets/2608.24882/fig2.webp" alt="fig2"><figcaption>Figure 2: Overview of our LAWA. A structured mask controls information flow among the three branches. At inference, LAWA discards the future-video branch and jointly denoises compact latent intentions and action chunks, retaining future-aware action generation without explicitly predicting future observations. The language instruction is omitted for better illustration.</figcaption></figure>
+<figure><img src="assets/2608.24882/fig3.webp" alt="fig3"><figcaption>Figure 3: Action-free egocentric pre-training pipeline of the latent action tokenizer.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在 RoboCasa、LIBERO-Plus 及真实机器人任务上展开。在 RoboCasa 仿真基准中，LAWA 在少样本（10% 数据）下达到 65.6% 成功率，全数据下 80.8%，分别优于 Fast-WAM 9.6 和 4.5 个百分点，且性能与 Joint-WAM 相当。推理延迟方面，LAWA 为 338.5ms，比 Joint-WAM 低 42.9%，虽慢于 Fast-WAM 的 196.5ms，但性能优势显著。在 LIBERO-Plus 零样本迁移测试中，LAWA 以 74.4% 的总成功率超越 Fast-WAM 14.4 点，尤其在相机视角和传感器噪声扰动下表现稳健。真实世界任务（Gear, Battery 等）验证了其在细粒度装配和长视界操作中的有效性，仅用 25% 演示数据即超越全数据 Fast-WAM。消融实验表明，自监督预训练和掩码辅助损失对提升性能至关重要，证明了潜在动作作为意图接口的有效性。</div><div class="en">—</div><figure><img src="assets/2608.24882/fig5.webp" alt="fig5"><figcaption>Figure 6: Real-world tasks. Gear and Battery involve assem- bly with fine-grained operations, while Block and Laboratory require long-horizon manipulation. Colored arrows indicate the required object transfers from their initial locations (blue) to their target locations (red).</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2608.24882/fig4.webp" alt="fig4"><figcaption>Figure 5: Egocentric pre-training scalability comparison. Under matched video fractions, LAWA obtains larger down- stream gains than Fast-WAM in both data settings.</figcaption></figure>
+</body></html>

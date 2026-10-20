@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Knowing When to Stop: Adaptive Action Chunking via Internal Cross-Attention Dynamics in VLAs</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Knowing When to Stop: Adaptive Action Chunking via Internal Cross-Attention Dynamics in VLAs</h1>
+<p class="meta">Runze Xu, Xiaolong Shan, Shuang Dai, Yu Wang, Jincheng Yu<br>
+<a href="http://arxiv.org/abs/2609.00908v1">abs</a><a href="https://arxiv.org/pdf/2609.00908v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给VLA模型开了个“内部监控”的脑洞，发现动作预测越往后，注意力越散，熵越高，说明模型开始“胡言乱语”了。作者没搞复杂的重训练，直接利用现有的Cross-Attention熵值作为“刹车片”，动态截断动作块。这招确实聪明，既省算力又防翻车，比那些死板固定步长的策略强多了。不过，这方法对模型架构有要求，得是那种能清晰分离动作查询和视觉Key的架构，要是那些高度纠缠的World Action Models (WAMs) 可能就得歇菜了。另外，虽然作者吹嘘“零开销”，但加个滑动窗口和阈值判断，理论上还是有微小延迟的，虽然实验说只有几毫秒，但在极端高频控制下能不能扛住还得看。总的来说，这是个“四两拨千斤”的好点子，但别指望它能解决所有VLA的幻觉问题，它只是给现有的“盲目自信”加了个止损线。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">在Vision-Language-Action (VLA) 框架中，Action Chunking 已成为标准执行策略，旨在通过批量预测动作来减少累积误差并捕捉时序逻辑 [15]。然而，现有的方法大多依赖固定的执行视界 (Fixed Execution Horizon)，这带来了严重的效率与精度权衡：视界太短会导致频繁推理、计算开销大且易引发震荡；视界太长则会导致动作预测与实时观测脱节，随着视觉反馈相关性衰减，预测精度崩塌 [17]-[22]。更糟糕的是，不同任务阶段（如粗调与微调）甚至同一任务的不同阶段，最优视界都截然不同，而现有工作 [2], [5] 仍依赖人工调参或静态启发式规则，严重限制了VLA在多样化场景下的泛化能力。虽然已有研究尝试通过多采样 [18] 或自注意力 [19] 来估计不确定性，但它们要么计算昂贵，要么忽略了当前观测对长程预测逐渐失效这一根本原因。因此，亟需一种无需重训练、能实时感知“当前观测还能支撑多远预测”的自适应机制。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">本文提出了一种基于动作专家内部Cross-Attention动态的自适应动作分块 (Adaptive Action Chunking) 方法。整体流程是：在推理阶段，VLA模型生成预测视界 $H_p$ 内的动作序列，同时计算每个动作token对VLM视觉/语言token的Cross-Attention权重。核心创新在于利用这些权重的熵值作为“感知接地” (Perceptual Grounding) 的代理指标。具体而言，作者观察到随着预测步数增加，注意力分布会从集中变得弥散，熵值上升并进入饱和平台期，这对应着预测误差的激增。基于此，方法定义了一个无训练截断机制：首先对熵序列进行滑动平均滤波以去噪，然后检测是否存在一个“高熵且低变化率”的持续平台。当检测到满足条件的平台时，算法动态将执行视界 $H_e$ 截断至该平台起始点附近；若未检测到（即注意力始终集中），则执行完整视界。该机制仅利用模型内部已计算的Attention权重，无需修改架构或额外采样，实现了感知与动作的动态闭环，且计算开销几乎为零。</div><div class="en">—</div><figure><img src="assets/2609.00908/fig1.webp" alt="fig1"><figcaption>Fig. 2: Method Overview. Our framework dynamically determines action chunk sizes by monitoring the cross-attention entropy within the action expert. Conditioned on VLM states, the action expert identifies chunk boundaries by monitoring attention focus. This enables adaptive execution across task stages.</figcaption></figure>
+<figure><img src="assets/2609.00908/fig2.webp" alt="fig2"><figcaption>Fig. 3: Visualization of cross-attention dynamics within the action expert of π0.5. (a) provides a comprehensive view across all 18 layers, where the vertical axis represents 50 action queries per layer and the horizontal axis comprises 1,018 key tokens (768 visual, 200 language, and 50 action tokens). (b) and (c) present magnified views of Layer 9 and Layer 14. Red boxes highlight the pronounced attention dispersion for later-stage actions, whereas tokens with smaller indices exhibit negligible reliance on these visual features.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">作者在RoboTwin 2.0、LIBERO基准及三个真实世界任务（挂杯子、叠杯子、整理笔）上，对π0.5和X-VLA模型进行了广泛评估。基线包括固定视界、多采样 (MS) [18] 和自注意力 (SA) [19] 方法。结果显示，本文方法在RoboTwin 2.0上平均成功率提升至62.9%，显著优于固定视界和MS/SA基线；在LIBERO所有子集上均取得最高分，平均成功率97.25%；在真实世界任务中，平均成功率提升14.2%。效率分析表明，相比MS方法增加29.5ms延迟，本文方法仅增加不到7ms，证明了其高效性。消融实验发现，熵值与动作MSE呈强正相关，且不同任务阶段（如粗调vs微调）的熵增长模式差异明显，验证了该方法能自适应调整视界。</div><div class="en">—</div><figure><img src="assets/2609.00908/fig3.webp" alt="fig3"><figcaption>Fig. 5: Entropy patterns in X-VLA. Two distinct patterns are observed: the rising-plateau pattern reaches a sustained high-entropy regime, whereas the fluctuating-ascent pattern continues to vary without forming a stable plateau.</figcaption></figure>
+<figure><img src="assets/2609.00908/fig4.webp" alt="fig4"><figcaption>Fig. 6: Real-world tasks. We evaluate the generalizability of our adaptive chunking method across three representative real-world tasks: Hang mug, Stack cups, and Pen Tidying.</figcaption></figure>
+</body></html>

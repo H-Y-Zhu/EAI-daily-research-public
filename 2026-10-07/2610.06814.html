@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TAPDreamer: Transferable Adversarial Patches for World Action Models</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>TAPDreamer: Transferable Adversarial Patches for World Action Models</h1>
+<p class="meta">Xuanyu Lu, Fengqing Jiang, Kaiyuan Zheng, Yichen Feng, Yaorui Ding, Yuetai Li<br>
+<a href="http://arxiv.org/abs/2610.06814v1">abs</a><a href="https://arxiv.org/pdf/2610.06814v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给具身智能的“世界模型”泼了盆冷水。作者发现，只要给摄像头贴个固定的小贴纸，就能让 FastWAM 这种看似聪明的机器人彻底“失智”，成功率从 97% 跌到 0%。最讽刺的是，这攻击不需要知道机器人怎么决策，只用公开视觉编码器就能搞定，完全绕过了动作生成模块。虽然效果惊人，但别高兴太早，这目前还只在仿真里跑，真机器人贴个贴纸会不会被当成异物处理？而且攻击依赖特定编码器，换个架构可能就不灵了。不过，它确实暴露了 WAM 对视觉输入信任的脆弱性，提醒我们光防动作头不够，得防视觉编码器本身。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">世界动作模型（WAMs）正成为机器人控制的基础，但它们高度依赖视觉输入。现有攻击方法（如 BadWAM, JailWAM）通常需要访问目标模型的动作头或进行在线查询，限制了实际威胁。TAPDreamer 旨在解决一个更隐蔽的漏洞：利用公共视觉编码器的复用性。如果攻击者能利用公开编码器优化一个固定补丁，就能绕过特定模型的动作生成模块，实现跨任务、跨架构的迁移攻击。这揭示了 WAM 安全性的根本弱点——视觉表征层一旦受损，下游决策必然崩塌。</div><div class="en">—</div><figure><img src="assets/2610.06814/fig1.webp" alt="fig1"><figcaption>Figure 1: TAPDreamer constructs a patch using a public visual encoder and observations from one source task, then freezes it for deployment across tasks and WAMs within each benchmark. Examples compare clean and patched execution on drawer opening with FastWAM, pot placement with Motus, and bowl placement with DreamWAM.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">TAPDreamer 的流程分为离线优化和在线部署。首先，从单一源任务选取 6 帧演示图像，利用公开的视觉编码器（如 Wan VAE encoder）作为白盒，通过最大化干净与补丁后潜变量之间的 L1 距离来优化补丁像素。优化过程仅更新补丁，不触碰编码器权重。一旦找到最优补丁，其位置、内容和区域被冻结。部署时，该补丁直接叠加到所有任务的输入图像上，无需针对目标模型微调。核心机制在于，补丁引发的局部像素变化通过编码器的瓶颈注意力层，与值向量（Value Vectors）和注意力权重（Attention Weights）的协同变化相互作用，将扰动广播到整个特征空间，且这种扰动模式在不同观察中保持一致（共享模板），导致下游动作生成基于错误的表征。此外，实验表明这种扰动不仅影响当前帧，还会通过执行后的状态变化持续影响后续决策，形成闭环干扰。</div><div class="en">—</div><figure><img src="assets/2610.06814/fig2.webp" alt="fig2"><figcaption>Figure 2: Overview of TAPDreamer. (a) Pixel updates maximize the latent displacement through a frozen public visual encoder. (b) The resulting patch is frozen and reused at each step across tasks and models within the same benchmark.</figcaption></figure>
+<figure><img src="assets/2610.06814/fig3.webp" alt="fig3"><figcaption>Figure 3: Mechanism overview of TAPDreamer. Alocal patch-induced change spreads through bottleneck attention and propagates to the final latent. The changes across observations share a source-template component, with observation-specific residuals.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在 LIBERO 和 RoboTwin 仿真基准上进行，覆盖 40+50 个任务。基线包括 Clean 和 Random Patch。结果显示，FastWAM 在 TAPDreamer 攻击下成功率降至 0%（Clean 为 97.65%），远超随机遮挡。跨模型迁移测试中，DreamWAM 和 Motus 成功率也分别降至 1.45% 和 10.60%。消融实验表明，补丁面积增加会提升攻击性，但位置固定，移动补丁会失效。机制分析证实，注意力恢复实验能大幅减少扰动，验证了注意力传播路径的关键作用。此外，行为分析显示，移除补丁后指令恢复迅速，但物理后果持续，说明视觉扰动引发了不可逆的状态偏差。</div><div class="en">—</div><figure><img src="assets/2610.06814/fig6.webp" alt="fig6"><figcaption>Figure 7: Evolution of perturbation structure across observations during optimization. For three initializations, the panels show displacement on source and held-out observations, source-template agreement, the effective rank of 48 perturbation fields, and the ratio of the frozen source-template lower bound to measured L1 displacement. In (a), solid and dashed curves denote source and held-out states, respectively. Dotted lines show results with random patches.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2610.06814/fig4.webp" alt="fig4"><figcaption>Figure 5: Optimization trajectories for three initializations: (a) latent L1 displacement and (b) source-template agreement. Dotted lines denote random-patch results.</figcaption></figure>
+<figure><img src="assets/2610.06814/fig5.webp" alt="fig5"><figcaption>Figure 6: Ablation study of patch area. Random patches use the same area and placement as TAPDreamer.</figcaption></figure>
+<figure><img src="assets/2610.06814/fig7.webp" alt="fig7"><figcaption>Figure 8: Example of closed-loop behavior under TAPDreamer. Left: observation sequences under clean and perturbed conditions. Right: corresponding three-dimensional end-effector position trajectories. Green dashed and red solid paths denote Clean and TAPDreamer, respectively. The triangle marks the starting position and stars mark the endpoints; 𝑡counts environment execution steps. Positions are in meters in the world coordinate frame.</figcaption></figure>
+</body></html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Testing Frontier Large Language Models&#x27; Physics Literacy in Parallel Physical Worlds</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Testing Frontier Large Language Models&#x27; Physics Literacy in Parallel Physical Worlds</h1>
+<p class="meta">Dong Zhang<br>
+<a href="http://arxiv.org/abs/2607.00276v1">abs</a><a href="https://arxiv.org/pdf/2607.00276v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图给 LLM 的“物理智商”做个硬核体检，直接戳破了当前基准测试“准确率即正义”的遮羞布。作者很聪明，搞了三个“平行物理世界”，让模型在没见过的规则里推理，想看看是真懂还是死记硬背。方法上搞了个四阶段诊断，还搞了预注册和双裁判，仪式感拉满，显得特别严谨。但结果有点扎心：在难度最高的 Decay World 里，所有模型全军覆没，连 0% 的通过率都没有。最讽刺的是，模型连自己哪里错了都看不出来（Stage 4 Review 几乎全挂）。虽然这种“反事实物理”测试很有创意，但把物理简化成几个方程和自然语言描述，真的能代表真实的科学发现能力吗？不过至少它证明了，现在的 LLM 离真正的“科学 AI”还有十万八千里，别指望它们能像爱因斯坦那样独立构建理论。这种“反事实”设计虽然巧妙，但也可能过于简化了物理学的复杂性，忽略了真实科学探索中的试错与直觉，且人工审计成本高昂。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有 LLM 物理评测主要依赖答案准确率，但这无法区分推理与记忆。Mirzadeh et al. (2024) 的 GSM-Symbolic 已证明模型对符号扰动极度敏感，表面符号匹配贡献了大部分正确率。此外，现有 AI for Science 工作多局限于人类预设框架内，如 Boiko et al. (2023) 的 Coscientist 仅执行优化，无法独立构建理论。世界模型评估多停留在感知预测，缺乏形式化理论的归纳（Zhang, 2024）。因此，核心问题在于：如何剥离训练数据记忆，直接观测模型能否从现象独立归纳出可验证的理论体系？这需要超越解题，进入“平行物理世界”进行无先验知识的理论构建测试。现有基准无法回答模型是否具备真正的物理理解，而非仅仅是模式匹配，且无法评估模型在未知框架下的认知边界。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分为四个独立阶段：归纳（Induction）、形式化（Formulation）、预测（Prediction）和审查（Review）。每个阶段在独立 API 会话中运行，禁止上下文复用，防止隐藏状态传递。<br>1. 归纳：输入自然语言现象，输出规则集。<br>2. 形式化：将规则改写为可操作形式，定义边界。<br>3. 预测：基于规则对未见场景做定量预测。<br>4. 审查：模型自我评估前序步骤错误。<br>创新点包括：锁定预注册（SHA-256 哈希防篡改），双 LLM 裁判加人工审计（分歧率超 25% 触发），以及三个难度递增的平行物理世界（F=mv, 亚里士多德力学，Decay World）。复合通过需内容轴和结构轴全过，审查轴单独报告元认知能力。这种设计有效隔离了各阶段能力，避免了错误累积导致的混淆，确保了评估的因果独立性。</div><div class="en">—</div><figure><img src="assets/2607.00276/fig1.webp" alt="fig1"><figcaption>Figure 1: Four-stage protocol and evaluation pipeline. A trial runs one tested model through Stage 1 (induc- tion), Stage 2 (formulation), Stage 3 (prediction), and Stage 4 (review), with each stage in an independent API session and only the final response text of Stage k passed to Stage k + 1. Every stage output is scored by two independent LLM judges (Claude and GPT). If a round’s judge-disagreement rate exceeds 25%, the disagreement cases go to human audit for the canonical verdict (§2.4). The composite verdict requires Stage 1, Stage 2, and every Stage 3 scenario to pass, plus the structural axis where the framework applies one (§2.5). Stage 4 over-claim is reported separately as a metacognitive axis. Each framework is run on Claude Opus 4.7, GPT-5.5, and Gemini 3.1 Pro with N = 5 tria</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">测试了 Claude Opus 4.7, GPT-5.5, Gemini 3.1 Pro 三个模型，每个框架 5 次试验。<br>结果：F=mv 和亚里士多德世界各 6/15 通过，Decay World 为 0/15。<br>发现：模型失败模式各异，Claude 弱于形式化，GPT 弱于结构，Gemini 弱于归纳。<br>关键发现：存在定性 - 定量不对称性，模型常方向正确但比率错误（回归标准物理）。Stage 4 审查能力极弱，2/3 含错试验中模型声称无错。<br>数据完全开源，包含提示词、响应和审计记录，为 LLM 评估提供了可复现的审计管道。这揭示了当前模型在跨域统一和理论自洽上的根本缺陷，表明其物理知识仍高度依赖训练数据中的标准范式。</div><div class="en">—</div><figure><img src="assets/2607.00276/fig2.webp" alt="fig2"><figcaption>Figure 2: Where the 15 trials end up in each framework: composite PASS, or the stage at which the trial first failed (Stage 1 induction, Stage 2 formulation, Stage 3 prediction, or the structural axis). Composite PASS falls across the difficulty gradient at 6/15, 6/15, 0/15. Structural-only failures appear only at F = mv. Aristotelian applies the same structural axis and passes it uniformly, while Decay does not apply the structural axis at all. The Decay World bar shows the first failing stage per trial. Its quantitative Stage 3 bottleneck is a separate cumulative pattern, reported in §5 as 14 of 15 trials failing the Stage 3 check and 23 of 60 ratio-leaked quantitative predictions.</figcaption></figure>
+</body></html>

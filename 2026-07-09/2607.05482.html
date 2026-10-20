@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TypeGo: An OS Runtime for Embodied Agents</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>TypeGo: An OS Runtime for Embodied Agents</h1>
+<p class="meta">Guojun Chen, Alex Schott, Lin Zhong<br>
+<a href="http://arxiv.org/abs/2607.05482v1">abs</a><a href="https://arxiv.org/pdf/2607.05482v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图用操作系统思维重构具身智能的控制栈，概念上很性感。TypeGo 不满足于把 LLM 当黑盒 Oracle，而是构建了一个异步运行时，将规划拆解为 S0 到 S3 四层不同频率的循环。S0 负责毫秒级反射，S1 负责流式技能生成，S2 分解任务，S3 负责语义调度。实验在 Unitree Go2 上跑通，TTFA 相比单体规划降低 73%，每步延迟减半。但槽点也不少：Token 消耗激增，且当前内存管理简陋，离真正的 Agent OS 还有距离，更像是一个高级的脚本调度器。不过，将物理资源仲裁封装为 Skill Kernel 是个务实的亮点，解决了多任务抢占硬件的硬伤。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有 LLM 驱动机器人面临三大系统级挑战。首先是实时性，SOTA 模型推理慢，[1, 2] 虽加速单次调用但未解决关键路径延迟。其次是并发，机器人常需同时处理巡逻、避障、交互，但 [3-7] 多忽略资源仲裁，导致动作冲突。最后是反应性，自然语言指令仅能定义目标，无法处理突发状况，[17] ReAct 等步骤式规划在动作间隙会因重规划而卡顿。TypeGo 旨在通过 OS 风格运行时，利用异步和推测机制隐藏 LLM 延迟，实现多任务并发与快速反应。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体架构模仿 OS，核心是 Skill Kernel 与四层异步循环。用户指令被 S3 解析为 Process，每个 Process 拥有 PCB 记录状态。S2 将任务分解为子任务列表及全局事件，S1 通过 Speculative Skill Streaming 将规划与执行重叠，维护有界队列以隐藏延迟。S0 层将反射规则编译为 Python 函数，以最高优先级中断低层进程。创新点包括：1. 资源仲裁：Skill Kernel 管理 MOVEMENT 等子系统，支持独占或共享，类似设备驱动。2. 语义调度：S3 基于场景理解而非固定优先级决定抢占，区分“中断返回”与“替换不返回”。3. 自然语言编程：用户通过 Prescription 编写任务与反射，无需代码。S1 队列大小设为 3，S2 每 2 秒重检，确保动态适应性。</div><div class="en">—</div><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 Unitree Go2 (Kalos) 原型上验证，对比 ReAct [17] 和 Plan-and-Execute (PAE)。任务涵盖导航、避障及并发指令。指标包括 TTFA、每步延迟、成功率。TypeGo 在 TTFA 上比 PAE 快 73%，每步延迟比 ReAct 低 50%。并发任务 T6/T7 显示调度开销可控（约 200ms），但 Token 消耗显著高于基线。失败案例 T3 显示系统能报告阻塞，但 T4 暴露了贪婪策略可能不如全局规划。未来需改进内存管理以支持长时运行。S3 调度开销约 200ms，S0 反射处理约 50ms。</div><div class="en">—</div>
+</body></html>

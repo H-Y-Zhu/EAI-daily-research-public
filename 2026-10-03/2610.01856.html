@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChunkVLA-AM: Parallel Action Chunking for Vision-Language-Action Robot Control in Additive Manufacturing</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>ChunkVLA-AM: Parallel Action Chunking for Vision-Language-Action Robot Control in Additive Manufacturing</h1>
+<p class="meta">Zhugang Liu, Kaichuang Zhang, Jinman Zhang, Pu Sun, Martha Asare, Jose Hernandez<br>
+<a href="http://arxiv.org/abs/2610.01856v1">abs</a><a href="https://arxiv.org/pdf/2610.01856v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇工作算是给 OpenVLA 在工业场景落地做了个扎实的“工程补丁”。作者没搞新模型架构，而是把 Action Chunking 和 LoRA 适配结合在 FAIRINO FR3 机器人上跑通了 AM 后处理流程，工程能力确实在线。云边架构设计合理，推理与执行分离。不过，92.9% 的成功率看着挺美，剩下的 7% 全栽在“放东西”这一步，说明对末端高度控制还是太依赖开环直觉，缺乏力控反馈。光照实验也暴露了单目视觉的硬伤，亮度一变误差就飘，指望它去工厂里跟 FDM 打印机的复杂光照硬刚，估计得先给车间装个恒温恒湿灯。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">增材制造（AM）虽然能造复杂零件，但后处理环节风险高，比如 FDM 排放微粒 [4]，SLM 涉及金属粉末 [6]，机器人介入能保命。但传统规则程序换台机器就得重写 [7]-[9]。VLA 模型如 RT-1 [10]、OpenVLA [13] 虽能理解语言，但直接迁移到新机器人（embodiment）成本太高，且对光照、背景变化敏感。现有数据集格式不统一 [14]-[15]，导致适配难。此外，单步自回归预测容易累积误差，导致末端漂移，难以满足精密制造需求。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心是 ChunkVLA-AM 框架，包含五个接口。1. 数据转换：将 FR3 原始日志转为 RLDS 格式，统一坐标系和动作语义，7-D 动作包含 6 维笛卡尔增量和 1 位夹爪状态。2. 动作归一化：将动作裁剪到 [-1, 1] 范围，防止超出物理限制。3. LoRA 适配：在 OpenVLA-OFT 基础上，冻结预训练主干，仅训练低秩矩阵，rank 设为 32，避免全量微调的高昂成本。4. 动作块构建：预测 H=8 的未来动作序列，训练时拼接相邻专家动作。5. 云边执行：7B 模型在云端 RTX 6000 推理，本地 FR3 客户端负责接收、解码、安全过滤（如检查工作空间 B、最小高度 zmin）及执行，形成块间闭环反馈。</div><div class="en">—</div><figure><img src="assets/2610.01856/fig1.webp" alt="fig1"><figcaption>Fig. 1. Cloud-edge deployment architecture. The local FR3 client sends instruction-conditioned RGB observations to a remote OpenVLA-OFT service, receives an action chunk, and validates commands before execution.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 42 次物理 A-B 传递试验中，红蓝目标各 21 次。系统成功 39 次，成功率 92.9%。失败案例均发生在 B 点放置阶段，因释放高度控制不足导致物体倾倒。轨迹评估显示，ChunkVLA-AM 的 MAE 为 1.74mm，显著优于 Zero-shot 的 179mm 和单步微调 [24] 的 9.5mm。光照敏感性测试发现，平均亮度在 85-125 区间内误差最低，过暗（30）或过曝（210）会导致 Z 轴误差激增。这表明虽然 Chunking 改善了时序一致性，但单目视觉在极端光照下仍存在鲁棒性瓶颈。</div><div class="en">—</div><figure><img src="assets/2610.01856/fig2.webp" alt="fig2"><figcaption>Fig. 2. Trajectory tracking comparison across adaptation methods. The y- axis uses a logarithmic scale to highlight the significant precision gains. ChunkVLA-AM achieves sub-millimeter lateral accuracy, outperforming both zero-shot models and single-step fine-tuned baselines.</figcaption></figure>
+<figure><img src="assets/2610.01856/fig3.webp" alt="fig3"><figcaption>Fig. 3. Trajectory prediction errors across ten luminance-sweep trials. The solid curve and surrounding band show the across-trial mean spatial error and ±1 standard deviation, respectively. The remaining curves show the axis-wise MAEs. The highlighted range from 85 to 125 indicates a low-error region centered around the minimum error observed at luminance 95.</figcaption></figure>
+<figure><img src="assets/2610.01856/fig4.webp" alt="fig4"><figcaption>Fig. 4. Representative FR3 workspace captures under six illumination conditions used in the lighting robustness study. Panel (a) is the neutral baseline; the remaining panels span low light, over-exposure, and warm/cold color-temperature variants. Luminance values are mean pixel intensity on a 0–255 scale.</figcaption></figure>
+</body></html>

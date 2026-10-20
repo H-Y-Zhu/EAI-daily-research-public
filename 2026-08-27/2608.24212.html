@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NeoWorld-Pro: Programming Interactive Scenes from Monocular Images for Embodied Simulation</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>NeoWorld-Pro: Programming Interactive Scenes from Monocular Images for Embodied Simulation</h1>
+<p class="meta">Yumeng He, Yichen Song, Xiaotian Yang, Weijia Zhang, Zanwei Zhou, Junru Gong<br>
+<a href="http://arxiv.org/abs/2608.24212v1">abs</a><a href="https://arxiv.org/pdf/2608.24212v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">NeoWorld-Pro 试图用 MLLM 写代码来重建 3D 场景，这招确实比单纯生成点云或网格要“聪明”得多，毕竟代码是机器能直接跑的，而点云还得靠人脑去猜物理关系。它的“物理闭环”机制是个亮点，让模型在仿真器里“摔打”自己生成的物体，比那些开环方法强多了，至少不会生成一堆悬浮在空中的桌子。不过，这方法对 MLLM 的依赖太重了，一旦模型“幻觉”出个不存在的关节，或者物理引擎报错导致死循环，整个流程可能就崩了。而且它目前只能处理刚体和简单连杆，对于布料、流体这种“软”东西完全无能为力，这在真实世界里可是个大坑。总的来说，这是个把“生成”变成“编程”的有趣尝试，但离真正的通用具身智能还差得远，毕竟它还没学会怎么把一杯水倒进杯子里而不洒出来。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">具身 AI 的发展急需高保真、可交互的仿真环境，但现有的单目图像到仿真场景的转换存在三大瓶颈。首先，大多数现有工作如 [4, 19, 21] 仅关注单个资产的图像到 URDF 重建，缺乏对场景级交互和物体间物理依赖的联合建模。其次，现有方法往往依赖大型 curated 资产库或刚性类别先验 [4, 19, 8, 20]，导致数据需求高且难以泛化到分布外（OOD）场景。最致命的是，现有管线多为开环 [4, 33, 15, 8]，将重建视为单向推理任务，缺乏纠正几何、关节或场景组成中物理不一致性的反馈机制。例如，NeoWorld [43] 虽然能构建可探索世界，但其混合神经表示对仿真关键的几何和物理属性控制有限。因此，亟需一种显式的、可执行的场景表示，支持结构化编辑和基于物理的细化，以解决“仿真就绪”这一核心难题。</div><div class="en">—</div><figure><img src="assets/2608.24212/fig1.webp" alt="fig1"><figcaption>Figure 1: Demonstration of NeoWorld-Pro. Our framework ensures simulation-readiness by optimizing: (a-b) physically plausible intra-object articulations under external forces, (c-d) stable inter-object spatial configurations, and (e-f) scene viability for assembly and manipulation tasks.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">NeoWorld-Pro 将单目场景重建重构为 MLLM 驱动的编程合成，并引入两层物理闭环（Physics-in-the-Loop）机制。整体流程分为四个阶段：首先是场景解析，利用 MLLM-Reasoner 预测场景层级树、2D/3D 边界框及语义属性，并由 MLLM-Critic 评估以确保层级一致性。其次是程序化资产编程，针对每个分割对象，MLLM-Programmer 生成可执行的 Blender Python 脚本，定义几何、关节参数和物理属性，并输出 URDF。这一步利用 MLLM 的常识推理能力，无需依赖特定数据集先验即可推断遮挡结构。接着是物体级物理闭环，将生成的 URDF 放入 Isaac Sim 进行自由落体和力扰动模拟，通过视频分析 MLLM-Critic 识别质量分布、碰撞几何或关节运动问题，指导 Reasoner 进行局部代码编辑以修正物理属性。最后是场景级组合与 CEM 优化，基于解析的布局构建初始场景，随后利用交叉熵方法（CEM）在仿真反馈下优化物体的相对尺度、位置和旋转。通过结合物理惩罚项（穿透、漂移）和语义评分，迭代优化直至收敛，确保场景无穿透、稳定且符合物理规律。</div><div class="en">—</div><figure><img src="assets/2608.24212/fig2.webp" alt="fig2"><figcaption>Figure 2: Overview of the pipeline. Given a monocular RGB image, NeoWorld-Pro first performs scene parsing and reasoning to establish a scene tree and layout. Each foreground object is then programmed into an executable Blender script to generate geometry and articulation. A two-level physics-in-the-loop mechanism ensures simulation-readiness: (1) an object-level loop for articulation and kinematic refinement, and (2) a scene-level loop based on CEM that optimizes scene plausibility, such as relative object scale and placement, collision-free spatial consistency, and stability.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">作者在包含 90 个可动物体类别和 30 个场景的自建 USD 基准上进行了评估，并与 PhysX-Anything [2]、URDF-Anything+ [33]、Articulate-Anything [11] 等基线对比。结果显示，NeoWorld-Pro 在外观保真度（LPIPS、CLIP）、几何精度（F-score）及关节恢复（低缺失率、低轴/枢轴误差）上均优于开环基线。在场景级评估中，该方法彻底消除了物体间穿透（S-Pen=0.00），实现了 100% 的稳定性，且在语义完整性和布局保真度上得分最高。消融实验表明，移除物理闭环（Open-loop）会导致任务成功率大幅下降（从 92.85% 降至 44.05%），且移除语义奖励项也会显著影响场景布局的合理性。此外，作者还展示了从真实图像重建并成功执行试管放置等下游操作的能力，证明了其生成的场景真正具备物理可执行性。</div><div class="en">—</div><figure><img src="assets/2608.24212/fig3.webp" alt="fig3"><figcaption>Figure 3: Object-level reconstruction results of articulated assets. Compared with existing methods, NeoWorld-Pro recovers more faithful geometry, appearance, and articulation structure.</figcaption></figure>
+<figure><img src="assets/2608.24212/fig4.webp" alt="fig4"><figcaption>Figure 4: Qualitative scene reconstruction on our synthetic scene dataset. Each row compares reconstructions from the same monocular input. NeoWorld-Pro more faithfully preserves object iden- tity, relative scale and orientation, and inter-object layout across both tabletop and larger workspace scenes. “N/A” denotes examples outside TabletopGen’s tabletop setting.</figcaption></figure>
+<figure><img src="assets/2608.24212/fig5.webp" alt="fig5"><figcaption>Figure 5: Reconstruction from real-world images. The results illustrate generalization to real-world appearance and clutter while retaining functional articulations.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2608.24212/fig6.webp" alt="fig6"><figcaption>Figure 6: Examples of scenes and their corresponding manipulation tasks.</figcaption></figure>
+</body></html>

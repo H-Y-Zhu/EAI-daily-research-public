@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Moving Eye: Enhancing VLA Spatial Generalization via Hybrid Dynamic Data Collection</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>The Moving Eye: Enhancing VLA Spatial Generalization via Hybrid Dynamic Data Collection</h1>
+<p class="meta">Jincheng Tang, Yilong Zhu, Zhengyuan Xie, Jiang-Jiang Liu, Jiaxing Zhang<br>
+<a href="http://arxiv.org/abs/2607.02322v1">abs</a><a href="https://arxiv.org/pdf/2607.02322v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">VLA 模型在语义理解上很强，但在空间泛化上简直是个“脸盲”，稍微换个角度就找不到北。这篇论文一针见血地指出，单纯增加视角数量没用，模型只是在“走捷径”（Shortcut Learning），死记硬背相机与基座、物体间的固定关系。作者搞了个双机械臂系统，一个干活一个当“移动眼”，用混合动态数据把这种耦合打破。虽然“移动眼”听起来有点奢侈，但实验证明这招对 ACT、Diffusion 甚至 Pi0 都有效，算是给 VLA 的“空间感”补了个硬补丁。不过，纯动态数据训练难收敛，必须混合静态数据，这“黄金比例”1:3 是不是玄学还得看具体架构，毕竟不同模型对数据分布的敏感度不同。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">VLA 模型在真实部署中面临严峻的空间泛化挑战，微小的相机位姿扰动就会导致性能崩塌 [1]-[4]。现有工作多依赖架构改进（如引入 3D 深度 [9]、[10]）或数据增强 [20]、[21]，但往往无法根除“捷径学习”问题。模型容易陷入隐式耦合陷阱：Camera-Base Coupling（死记相机与背景关系）、Camera-Object Coupling（依赖固定视角）、Object-Position Coupling（过拟合物体相对位置）。单纯增加静态视角（Multi-Fixed）无法打破这些关联，导致在未见配置下失效。因此，亟需一种数据中心的范式，通过动态视角和物体配置多样性，强制模型学习真正的空间关系而非虚假相关性。</div><div class="en">—</div><figure><img src="assets/2607.02322/fig1.webp" alt="fig1"><figcaption>Fig. 1. Hierarchical Spatial Zoning for Data Collection. We con- ceptualize the robot’s camera workspace into three configurations: Fixed View, where the camera is static; Multi-Fixed View, where the camera is static within an episode but varies across episodes; and Moving View, the decoupling zone where the camera moves continuously to break spurious correlations. Our key insight is that low-cost decoupled data from Moving Views can robustify the policy trained on Multi-Fixed Views.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心是 Hybrid Dynamic Data Collection 策略。系统采用双机械臂架构：操作臂执行任务，环境臂控制相机作为移动眼。数据收集分为三种配置：Fixed（固定）、Multi-Fixed（多固定）、Moving（连续移动）。创新点在于混合采样：利用 Multi-Fixed 保证收敛稳定性，利用 Moving View 作为正则化项打破空间耦合。具体实施中，不仅相机轨迹连续运动，还显式随机化物体相对位置（Object Configuration Diversity），彻底切断 Object-Position 捷径。训练时，动态数据与静态数据按特定比例混合（如 Gr00t 的 1:3 黄金比例），形成混合数据集 Dtrain。该策略无需修改模型架构，仅通过数据分布重塑，使策略在未见相机位姿和物体配置下保持鲁棒。此外，通过 Hierarchical Viewpoint Sampling 和 Optimal Composition，平衡了学习效率与数据多样性，确保模型既不会因纯动态数据而难以收敛，也不会因纯静态数据而过拟合。</div><div class="en">—</div><figure><img src="assets/2607.02322/fig2.webp" alt="fig2"><figcaption>Fig. 3. Real-world Realization of Camera Viewpoint Configurations. We implement Fixed, Multi-Fixed, and Moving Views using an environ- mental camera controlled by a separate robot arm. The Moving View configuration (Decoupling Zone) allows for continuous trajectory sampling to break spurious correlations.</figcaption></figure>
+<figure><img src="assets/2607.02322/fig3.webp" alt="fig3"><figcaption>Fig. 4. Experimental Setup. A robot arm controls a mobile environmental eye capturing data from various viewpoints, while another one with a wrist- mounted camera performs manipulation tasks.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 Pen Pick-and-Place 和 Multi-Object 任务上测试。基线包括 Fixed View 和 Multi-Fixed View。指标为成功率。实验 1 显示，Fixed 基线在 OOD（移动相机）下性能从 85% 暴跌至 43%，而混合数据保持 83%。实验 2 验证了 Object-Position 耦合，固定底座时性能从 95% 降至 71%，混合数据维持 90%。实验 3 发现纯 Moving 数据（54.8%）不如 Multi-Fixed（80.5%），但混合后达 89%。实验 4 证明该策略在 ACT、Diffusion、Pi0 等架构上通用，且辅助任务数据可迁移至新任务，显著提升样本效率。</div><div class="en">—</div><figure><img src="assets/2607.02322/fig4.webp" alt="fig4"><figcaption>Fig. 5. Shortcut learning (Camera-Base). While the Fixed View Baseline collapses on Moving Tests (OOD), our method maintains high performance. Error bars denote standard deviation. Here, ID = same fixed camera and holder as training; OOD = moving camera (Exp.1 convention).</figcaption></figure>
+<figure><img src="assets/2607.02322/fig5.webp" alt="fig5"><figcaption>Fig. 6. Verification of Object-Position Coupling. The significant drop in performance when the pen holder is shifted (OOD) demonstrates that the model relies on fixed relative positions rather than true spatial understanding. Our method (Green) successfully breaks this coupling.</figcaption></figure>
+<figure><img src="assets/2607.02322/fig6.webp" alt="fig6"><figcaption>Fig. 7. Impact of Data Composition Ratio. For Gr00t, the success rate peaks at Moving:Multi-Fixed = 1:3 (Golden Ratio). Shaded regions denote standard deviation.</figcaption></figure>
+<figure><img src="assets/2607.02322/fig7.webp" alt="fig7"><figcaption>Fig. 9. Universality of the Data Strategy. All evaluated architectures (ACT, Diffusion, and VLA models including Pi0 and Gr00t) benefit from the mixed data strategy, with Gr00t showing the highest peak performance. Shaded regions denote standard deviation.</figcaption></figure>
+<figure><img src="assets/2607.02322/fig8.webp" alt="fig8"><figcaption>Fig. 8. Cross-Task Spatial Generalization Transfer. Our method (Green), leveraging auxiliary data, consistently outperforms the Baseline (Red) on the challenging Moving Test set, achieving high success rates with fewer task- specific episodes. Shaded regions denote standard deviation.</figcaption></figure>
+</body></html>

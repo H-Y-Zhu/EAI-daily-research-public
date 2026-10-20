@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Towards Professional Tennis Styles for Humanoid Robots with Adaptive Motion Planning and Tracking</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Towards Professional Tennis Styles for Humanoid Robots with Adaptive Motion Planning and Tracking</h1>
+<p class="meta">Tao Huang, Ruofei Liu, Xuchen Tang, Xinyin Zhang, Junli Ren, Huayi Wang<br>
+<a href="http://arxiv.org/abs/2608.20087v1">abs</a><a href="https://arxiv.org/pdf/2608.20087v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文让 Unitree G1 穿上了职业网球手的战袍，能模仿纳达尔、费德勒和德约科维奇的击球风格，确实让人眼前一亮。但别急着吹，核心贡献其实是“骗”过了仿真到真实的鸿沟。作者很诚实，承认了纯仿真里的 decoupled 架构在真机上会崩，于是搞了个速度自适应机制。不过，所谓的“in-the-wild”其实还是依赖了 VIVE 追踪器和 YOLO，离真正的纯视觉自主还有距离。而且 Dobot Atom 上的表现虽然展示了扩展性，但硬件限制（如手腕）仍是瓶颈。总的来说，这是一篇在工程落地和算法鲁棒性上都很扎实的工作，虽然离“完全无感知的野外网球”还差口气。此外，对于风格与任务性能的权衡，本文给出了清晰的量化分析，比单纯追求成功率更有参考价值。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有机器人网球研究多关注任务成功率（如击球、回球），却忽视了职业选手的“风格” [47]。风格不仅是美学，更关乎生物力学中的力量生成与快速恢复 [6]。然而，现有的解耦规划与跟踪框架（如 Vid2Player3D [47]）在仿真中有效，部署到真机时，跟踪性能因执行器建模不完美而下降，且自回归规划会放大感知噪声导致的误差 [48]。此外，AdaMimic [13] 虽解决了单参考跟踪，但未结合感知且未应用于动态球类运动。因此，如何在保持职业风格的同时，解决真机上的跟踪退化与误差累积问题，是本文的核心动机。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">AdaPT 框架采用分层设计，分为 Rally 和 Serve 两个分支。数据流上，从广播视频提取 SMPL 动作，经 GMR 重定向并物理修正。Rally 分支基于 Vid2Player3D [47]，使用 MVAE 生成器提供多样性，高层规划器预测潜变量和速度适应信号 $\alpha_t$。Serve 分支基于 AdaMimic [13]，训练残差跟踪器以平衡任务与风格，并引入关键帧（backswing）奖励。核心创新在于**速度自适应**：训练时随机混合参考状态（$\hat{q}^\alpha_t$），使跟踪器适应不同执行速度；规划器则根据 $\alpha_t$ 调整运动节奏，缓解误差累积。这种机制让规划器能感知跟踪器的能力边界，从而在真机上实现更稳健的部署。此外，发球任务中引入了抛球引导奖励，确保抛球高度和轨迹符合职业选手习惯，避免策略过度简化。</div><div class="en">—</div><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">数据集包含三位职业选手的广播视频及 MoCap 数据。仿真对比了 RL-Scratch、AMP、PULSE、Vid2Player3D 等基线。真实机器人实验在 Unitree G1 和 Dobot Atom 上进行。指标包括击球成功率、FID（风格相似度）、落地误差等。结果显示 AdaPT 在仿真中平衡了风格与任务，真机上显著优于 Vid2Player3D（如纳达尔正手击球率从 28% 提升至 44%）。消融实验表明，自适应跟踪器和规划器缺一不可。此外，研究发现后弹跳轨迹预测误差对回球成功率影响更大，且 YOLO 感知在发球任务中表现接近 MoCap，但在回球中受噪声影响明显。</div><div class="en">—</div><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2608.20087/fig1.webp" alt="fig1"><figcaption>Figure 1: Overview. (Rows 1–3) Our method AdaPT enables the Unitree G1 to learn the forehand and backhand rally styles of three professional players—Rafael Nadal, Roger Federer, and Novak Djokovic—from broadcast videos, and the style of another professional player from motion capture data. (Row 4) The G1 further learns professional serving styles with a parallel gripper for ball tossing. (Row 5) It performs in-the-wild serving using only a ZED X camera and an HTC VIVE Ultimate Tracker, without motion capture. (Rows 6–7) We further extend AdaPT on the full-size Dobot Atom humanoid robot. (Rows 8–10) Finally, the robot demonstrates autonomous interaction with humans, including serving and returning the ball to itself.</figcaption></figure>
+<figure><img src="assets/2608.20087/fig2.webp" alt="fig2"><figcaption>Figure 3: AdaPT learns stylized humanoid tennis skills through the pipeline: (a) broadcast videos are reconstructed, retargeted, and physically corrected to obtain tennis motions; (b) speed-adaptive policies learn to track serve and rally motions; (c) high-level planners select or generate style-consistent motions for serve and rally; (d) our robot localization or ball detection modules enable sim-to-real deployment, especially for serving without MoCap.</figcaption></figure>
+<figure><img src="assets/2608.20087/fig3.webp" alt="fig3"><figcaption>Figure 5: Experimental setup for rally and serve task with motion capture. Evaluation. For fair rally evaluation in real robot experi- ments, we use an Acemate ball feeding machine [1], and symmetrically place it to launch balls into predefined tar- get regions with reproducible trajectories, repeating 25 times for each region. These launcher configurations are unseen during training, enabling reliable evaluation of fore- hand and backhand generalization. Each trial launches one ball every 4.5s. For serving evaluation, we use the Synria Gloria-D parallel gripper [37] to grasp and toss the tennis ball with 15 trials per model. We also evaluate the Unitree Dex-3 dexterous hand on simpler amateur-level motions; its weight (much heavier than the parallel gripper) prevents G1 from balancing und</figcaption></figure>
+<figure><img src="assets/2608.20087/fig4.webp" alt="fig4"><figcaption>Figure 15: The setup of in-the-wild serve.</figcaption></figure>
+</body></html>

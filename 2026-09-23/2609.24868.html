@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DualWAM: Dual-System World Action Models for Asynchronous Global Planning and Local Refinement</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>DualWAM: Dual-System World Action Models for Asynchronous Global Planning and Local Refinement</h1>
+<p class="meta">Yixin Zheng, Jiangran Lyu, Yuntian Deng, Kai Liu, Yizhou Zhou, Yizhou Wang<br>
+<a href="http://arxiv.org/abs/2609.24868v1">abs</a><a href="https://arxiv.org/pdf/2609.24868v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">DualWAM 给机器人 WAM 搞了个“双核”架构，一个负责慢悠悠画大饼（全局规划），一个负责急吼吼擦屁股（局部微调）。虽然 16.6 倍的加速确实让人眼前一亮，但训练两个模型显然比单模型烧钱，架构复杂度也上去了。它成功解决了 WAM 响应慢的痛点，把全局连贯性和局部灵活性强行缝合在一起。不过对于纯反应式任务，这招可能有点杀鸡用牛刀，毕竟维护两个系统的同步也是个麻烦事，且对算力要求更高。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有 WAM 面临计算效率与闭环响应的矛盾：长动作块能分摊推理成本但牺牲实时性 [34]，短块则导致预测短视，难以捕捉长时动态 [33]。这种权衡限制了机器人在复杂交互中的实时纠错能力，导致任务失败率上升。虽然 AHA-WAM [4] 和 Fast-WAM [35] 尝试通过异步或压缩缓解，但未能统一去噪轨迹中的角色分工。DualWAM 旨在解耦全局规划与局部微调，利用共享轨迹平衡计算负载与闭环控制，避免现有方法在单一模型内难以兼顾全局结构与局部细节的问题。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体采用共享去噪轨迹的异步双系统架构。System 2 负责全局规划，在高频噪声区间 [τ, 1] 对多视角世界动作状态进行双向去噪，利用全局场景上下文建立宏观轨迹假设。System 1 负责局部微调，在低频噪声区间 [0, τ) 仅使用手腕视角，从 System 2 的中间状态提取时间对齐窗口继续去噪。System 1 利用手腕相机刚性附着于末端执行器的特性，获取动作对齐的几何与接触线索。两者异步执行：System 2 后台低频刷新，System 1 高频利用最新观测修正动作，无需等待全局重生成。训练时通过随机偏移模拟执行状态偏差，增强 System 1 鲁棒性。此外，通过 CFG 并行、CUDA Graph 编译和混合精度量化优化推理延迟，确保实时性。</div><div class="en">—</div><figure><img src="assets/2609.24868/fig1.webp" alt="fig1"><figcaption>Figure 1 Overview. DualWAM couples low-frequency global world-action planning with high-frequency wrist-centric refinement along a shared denoising trajectory, enabling more responsive and efficient zero-shot manipulation.</figcaption></figure>
+<figure><img src="assets/2609.24868/fig2.webp" alt="fig2"><figcaption>Figure 2 DualWAM pipeline. System 2 denoises a complete global world-action state through the high-noise interval. At threshold τ, temporally aligned wrist-action windows are passed to compact System 1, which completes low-noise local refinement using fresh wrist observations.</figcaption></figure>
+<figure><img src="assets/2609.24868/fig3.webp" alt="fig3"><figcaption>Figure 3 Asynchronous closed-loop execution in DualWAM. Low-frequency System 2 updates a partially denoised global world-action trajectory Xp τ in the background, while high-frequency System 1 repeatedly extracts the temporally aligned local window. At each plan refresh, the updated trajectory Xp+1 τ is aligned with the current executed-action index. This concurrent schedule allows System 1 to maintain responsive control without waiting for System 2 to regenerate the global plan.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 Franka 和 Galbot 上进行 20 个零样本操作任务。任务涵盖抓取、放置、清洁等多种操作，验证了泛化能力。基线包括 π0.5、Cosmos3-Nano、AHA-WAM 等。DualWAM 平均成功率提升 4.5%，关键路径延迟降至 63ms（16.6 倍加速）。边缘 - 云通信开销降低 104.6 倍。消融显示双系统分解和局部视觉建模均必要，角色匹配数据（Ego/UMI）进一步提升性能。同步执行对比表明异步机制显著降低延迟并提升成功率。</div><div class="en">—</div><figure><img src="assets/2609.24868/fig4.webp" alt="fig4"><figcaption>Figure 4 Training coverage and zero-shot evaluation tasks. Top: distribution of 43,058 annotated subtasks across 74 manipulation skills in the self-collected Galbot training corpus. Middle and bottom: initial configurations for the ten Franka FR3 and ten Galbot G1 evaluation tasks, respectively.</figcaption></figure>
+<figure><img src="assets/2609.24868/fig5.webp" alt="fig5"><figcaption>Figure 5 Zero-shot real-robot performance and critical-path latency. Left and center: full-task success rate versus mean completion time over successful rollouts on Galbot and Franka, respectively. Completion time is the number of executed control steps divided by the control frequency. Right: critical-path latency on a logarithmic scale. DualWAM attains the highest success rate on both embodiments while providing the lowest latency and completion time.</figcaption></figure>
+<figure><img src="assets/2609.24868/fig6.webp" alt="fig6"><figcaption>Figure 6 Per-task zero-shot progress. Mean normalized task progress on Franka (top) and Galbot (bottom). DualWAM matches or exceeds the strongest baseline across all Franka tasks, while its Galbot gains are distributed across diverse interactions rather than being driven by a single task.</figcaption></figure>
+</body></html>

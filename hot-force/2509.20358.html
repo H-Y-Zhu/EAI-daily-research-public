@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PhysCtrl: Generative Physics for Controllable and Physics-Grounded Video Generation</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>PhysCtrl: Generative Physics for Controllable and Physics-Grounded Video Generation</h1>
+<p class="meta">Chen Wang, Chuhao Chen, Yiming Huang, Zhiyang Dou, Yuan Liu, Jiatao Gu<br>
+<a href="https://arxiv.org/abs/2509.20358">abs</a><a href="https://arxiv.org/pdf/2509.20358">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">PhysCtrl 试图用生成式物理网络解决视频生成的物理合理性问题，这想法挺性感。它不直接模拟物理，而是学物理分布，用扩散模型生成点轨迹，再喂给视频模型。好处是快，不用调模拟器参数；坏处是本质还是“伪物理”，毕竟轨迹是学出来的，不是算出来的。虽然号称支持四种材料，但本质上还是点云轨迹预测，遇到复杂交互可能露馅。视频生成部分依赖 DaS [24]，如果 DaS 本身有幻觉，物理约束也救不了。总的来说，是个不错的中间件，但离真正的物理引擎还有距离，别指望它能替代 MPM [37]。此外，合成数据训练可能导致现实域差距，虽然作者声称鲁棒，但失败案例显示薄结构处理不佳。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有视频生成模型 [4, 94] 虽然画质高，但缺乏物理常识，物体运动往往违背力学规律。传统物理模拟器 [37, 56] 虽然准确，但计算成本高、超参数敏感（如子步数、网格大小），且难以直接用于生成式任务。PhysGen [51] 等方法依赖模拟器生成动力学，但纹理粗糙。PhysCtrl 旨在通过数据驱动的方式学习物理动态分布，避免手动调参，同时提供物理参数（如杨氏模量）和力的显式控制。这解决了传统方法在通用性和效率上的 trade-off，让视频生成具备“物理 grounded”的能力，填补了纯数据驱动与物理仿真之间的鸿沟。特别是对于具身智能，理解物理交互至关重要，现有方法难以提供可解释的控制信号。</div><div class="en">—</div><figure><img src="assets/2509.20358/fig1.webp" alt="fig1"><figcaption>Figure 1: We propose PhysCtrl, a novel framework for physics-grounded image-to-video generation with physical material and force control. PhysCtrl supports generating physics-plausible motion trajectories across multiple materials as control signals (second row), and allows controls over physics parameters (e.g., Young’s Modulus E of elastic material (third row)) and force (last row). Note that in the bottom three rows, overlaid trajectories and frames use lighter hues for earlier time steps and darker hues for later ones.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分三步：首先将单目图像提升为 3D 点云；其次，利用条件扩散模型生成物理合理的 3D 点轨迹；最后，将轨迹投影为 2D 跟踪视频，作为条件输入预训练视频模型（DaS [24]）。核心创新在于轨迹生成网络：1) 采用时空注意力块（Spatiotemporal Attention），先空间聚合邻居信息再时间传播，模拟粒子相互作用；2) 引入物理损失（Physics Loss），基于 MPM 变形梯度更新约束预测点的位置和速度，确保运动符合连续介质力学；3) 支持弹性、沙土、橡皮泥、刚体四种材料，通过 [mat] token 区分。训练数据来自 550K 合成动画，覆盖不同物理参数。该方法避免了传统模拟器的数值不稳定，同时保留了物理可解释性，通过点云表示实现了跨材料的泛化能力。</div><div class="en">—</div><figure><img src="assets/2509.20358/fig2.webp" alt="fig2"><figcaption>Figure 2: An overview of PhysCtrl. Given a single image, we first lift the object in that image into 3D points. We then generate physics-grounded motion trajectories conditioned on physics parameters and external force with a diffusion model, which are then used as strong physics-grounded guidance for image-to-video generation.</figcaption></figure>
+<figure><img src="assets/2509.20358/fig3.webp" alt="fig3"><figcaption>Figure 3: Our trajectory generation architec- ture which consists of spatial attention and temporal attention in each block.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">使用 550K 合成数据集训练。基线包括 Wan2.1 [82], CogVideoX [94], DragAnything [89] 等。评估指标包含 GPT-4o 评分（语义一致性 SA、物理常识 PC、视频质量 VQ）以及轨迹生成的 vIoU、CD。结果显示 PhysCtrl 在物理常识（PC）和语义一致性（SA）上显著优于基线，PC 得分 4.5 vs 3.7。消融实验表明，移除物理损失会导致轨迹生成质量下降（vIoU 从 77.59% 降至 76.30%）。此外，相比传统模拟器，本方法在视频生成质量上相当，但控制更灵活。失败案例显示薄结构处理仍有难度，且视频模型可能产生幻觉。多物体交互初步实验显示 vIoU 达 93.70%，证明扩展潜力。</div><div class="en">—</div><figure><img src="assets/2509.20358/fig4.webp" alt="fig4"><figcaption>Figure 4: Qualitative comparison between our method and existing video generation methods.</figcaption></figure>
+<figure><img src="assets/2509.20358/fig5.webp" alt="fig5"><figcaption>Figure 6: Qualitative results: Compared to baselines, our method enables high-quality and coherent generation of motion sequences from physics conditions and closely matches the reference.</figcaption></figure>
+<figure><img src="assets/2509.20358/fig6.webp" alt="fig6"><figcaption>Figure 7: Comparison of using physics loss on trajectory generation. Here we show the final point position and tracks for points. With physics loss, the results are more closely aligned with the reference (simulated by MPM).</figcaption></figure>
+<figure><img src="assets/2509.20358/fig7.webp" alt="fig7"><figcaption>Figure 8: Failure cases.</figcaption></figure>
+<figure><img src="assets/2509.20358/fig8.webp" alt="fig8"><figcaption>Figure 9: More qualitative comparison between our method and baselines.</figcaption></figure>
+</body></html>

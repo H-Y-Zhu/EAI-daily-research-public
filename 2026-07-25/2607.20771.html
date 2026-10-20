@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Emergent Compositional Skills in Mixture-of-Experts VLAs</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Emergent Compositional Skills in Mixture-of-Experts VLAs</h1>
+<p class="meta">Shlok Shah, Rhiaan Jhaveri, Tharun Kumar Tiruppali Kalidoss, Chirayu Nimonkar, Ishaan Javali<br>
+<a href="http://arxiv.org/abs/2607.20771v1">abs</a><a href="https://arxiv.org/pdf/2607.20771v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图用 MoE 架构给 VLA 注入“模块化灵魂”，声称无需预定义层级就能涌现出可复用的技能。亮点在于，他们没搞复杂的分层规划器，而是简单粗暴地在动作头加 LoRA 专家，结果还真让路由器学会了“调度”：有的专家负责抓取，有的负责搬运。性能没输单模型，这点值得点赞。但“涌现”这词用得太满，部分专家依然任务特定，且手动路由能提升效果，说明自动路由还不够智能。所谓的“可解释性”更多是事后诸葛亮，毕竟论文自己也承认映射不精确。总的来说，这是用数据驱动换来了模块化，但离真正的“原子技能”还有距离，不过至少证明了 MoE 在具身智能里不是噱头。此外，6/16 专家未被使用，暗示模型自动剪枝了冗余，但也暴露了容量分配的不确定性。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有的 Vision-Language-Action (VLA) 模型虽然泛化能力强，但通常作为单体策略训练和部署，导致难以识别可复用技能，也无法在不修改整个模型的情况下适应部分任务 (Brohan et al., 2023; Embodiment Collaboration, 2025)。许多机器人任务本质上是可分解的，如抓取、放置等，但现有分层 VLA 系统往往强加固定的规划器 - 控制器拆分 (Li et al., 2025; Chen et al., 2025; Xu et al., 2026)，缺乏灵活性。本文旨在解决如何直接从数据中学习这种模块化结构，无需预定义技能库或子任务标签。核心动机是验证简单的 MoE 动作头能否让路由器隐式学习高层序列，而专家作为组合基元，从而提升策略的可解释性和鲁棒性，同时保持 VLA 的广泛任务能力。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">方法基于两个预训练 VLA 骨干 (π0 和 SmolVLA)，使用流匹配生成动作。核心创新在于动作专家 (Action Expert) 的 MoE 设计。首先，专家通过低秩 (LoRA) 增量实现，替换动作层 FFN 子层，共享自注意力机制，确保策略在零步时能复现预训练骨干。其次，路由机制简化为每次前向传播仅做一次决策，而非每层每 token 路由，这使得选定的专家代表一个连贯的端到端行为技能。路由器输入视觉、语言和本体感知状态，输出专家 logits 并取 top-k 重归一化，该选择应用于所有 MoE FFN 层。训练目标结合骨干的流匹配行为克隆损失与负载平衡辅助项，防止路由坍缩。整体架构不依赖特定骨干，旨在通过数据驱动让路由器隐式学习高层序列，专家则专注于底层行为模式。</div><div class="en">—</div><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在 LIBERO-10 基准上进行，对比 MoE 策略与微调后的单体基线 (π0 和 SmolVLA)。结果显示，MoE 在任务性能上与基线相当，但专家表现出有意义的专业化。定性分析发现，专家对应不同的技能阶段，如专家 A 负责搬运，专家 B 负责释放，且跨任务复用。定量分析区分了可复用专家 (跨任务高频) 和任务特定专家 (仅特定任务高频)。手动路由实验表明，即使路由器未选择某专家，其技能在特定上下文中仍有效，证明了原子的可组合性。然而，部分专家行为仍与任务强相关，且 6/16 专家未被使用，说明模型自动丢弃了多余容量。失败案例也显示出可解释的重复应用模式而非退化行为。</div><div class="en">—</div><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2607.20771/fig1.webp" alt="fig1"><figcaption>Figure 1. LoRA Mixture-of-Experts architecture. The router makes a single decision per forward pass from the VLM context (plus the noised action chunk aτ and flow-matching timestep τ), selecting one expert that is applied at every action-expert layer. Multi-head attention is shared across experts; only the FFN sublayer is replaced by a base FFN plus a routed LoRA adapter. The same expert (color) is used at every FFN, and the action chunk ˆat:t+H is produced through K flow-matching steps.</figcaption></figure>
+<figure><img src="assets/2607.20771/fig2.webp" alt="fig2"><figcaption>Figure 2. Qualitative comparison of three learned experts on LIBERO-10 rollouts. Each column shows start, middle, and end frames of trajectories where the corresponding expert was selected by the router.</figcaption></figure>
+<figure><img src="assets/2607.20771/fig3.webp" alt="fig3"><figcaption>Figure 3. Example trajectories labeled by top expert used at each step. Different skills are composed in order to perform a more complicated, longer horizon task. In task 4, repetition of skills allows for recovery-like behavior.</figcaption></figure>
+<figure><img src="assets/2607.20771/fig4.webp" alt="fig4"><figcaption>Figure 5. Manual router substitution for two action chunks. In both left and right chunks, expert B navigates away from the mug, whereas experts C/E grasp the mug.</figcaption></figure>
+</body></html>

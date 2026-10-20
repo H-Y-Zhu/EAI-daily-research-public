@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FreeSpeed: Training-Free Speed Control for Generative Robot Policies</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>FreeSpeed: Training-Free Speed Control for Generative Robot Policies</h1>
+<p class="meta">Yuxuan Hu, Shilin Shan, Qiheng Wang, Jinghan Yang, Junqiao Fan, Hao Wan<br>
+<a href="http://arxiv.org/abs/2610.05734v1">abs</a><a href="https://arxiv.org/pdf/2610.05734v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">FreeSpeed 这招‘看人下菜碟’的提速法确实有点东西，不用重新训练就能让冻结策略在快慢之间灵活切换，简直是给机器人装了个‘智能油门’。它利用动作方向的不一致性来识别关键任务阶段，在抓放物体等‘高危’路段自动减速保命，在直线移动时大胆加速，成功率和原策略几乎持平。不过，这方法也不是万能的，它的加速上限被任务本身的‘自由运动’空间死死卡住，遇到复杂地形或高难度操作，想飞也飞不起来。此外，这种依赖动作几何特征的方法，如果策略本身预测的动作就歪歪扭扭，那它的‘减速’信号可能也会失效，毕竟垃圾进垃圾出，再好的调度器也救不了烂策略。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">在真实场景中，机器人需要动态调整速度：时间紧时加速，人机交互或精细操作时减速。然而，现有的模仿学习策略（Imitation Learning）通常隐式继承了演示数据的速度，缺乏显式的速度控制接口。虽然已有工作如 TempoVLA (Jing et al., 2026) 和 SpeedTuning (Yuan et al., 2025) 实现了速度控制，但它们大多依赖针对特定任务的数据增强、重时间（retiming）演示数据或额外的强化学习微调，泛化能力受限，难以直接迁移到未见过的场景。更简单粗暴的测试时重采样（Vanilla Resampling）方法，虽然无需训练，但会改变动作步长，导致观测分布发生偏移（Out-of-Distribution, OOD），特别是在抓取、放置等关键阶段，极易引发任务失败。因此，亟需一种无需训练、模型无关且能自适应关键阶段的在线速度控制方法。</div><div class="en">—</div><figure><img src="assets/2610.05734/fig1.webp" alt="fig1"><figcaption>Figure 1 FreeSpeed modulates the execution speed of a frozen policy. (a) Methods based on demonstration retiming resample demonstrations and train or fine-tune the policy, while FreeSpeed resamples and rescales predicted action chunks at test time. (b) Success rates of FreeSpeed and vanilla resampling on three policies under speedup and slowdown commands.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">FreeSpeed 是一个即插即用的测试后处理模块，作用于冻结的动作块（Action Chunking）策略。其核心流程分为三步：首先，接收用户指定的目标执行速率 ρt；其次，对策略预测的动作块进行时间重采样（Resampling），通过跳过或重复动作步来初步调整时间粒度；最关键的是第三步，引入基于余弦不一致性（Cosine Inconsistency, CI）的自适应缩放机制。系统计算动作块内相邻平移增量的余弦不一致性 Icos(At)，该指标在任务关键阶段（如抓取、放置）较高，而在直线运动阶段较低。基于此，系统动态计算缩放因子 ft：当 Icos 较低时，ft 接近目标速率对应的激进缩放值，允许大幅加速或减速；当 Icos 较高时，ft 趋向保守值，限制步长变化幅度，以维持观测分布接近训练数据。最终，将重采样后的动作按 ft 缩放平移和旋转增量，再执行。这一过程无需更新策略参数，仅依赖预测动作的几何特征，实现了在保持任务成功率前提下的灵活速度调节。</div><div class="en">—</div><figure><img src="assets/2610.05734/fig2.webp" alt="fig2"><figcaption>Figure 2 FreeSpeed at one replan. The frozen policy predicts an action chunk. Its translation increments provide a cosine inconsistency score, and the rate command determines temporal resampling. Together, the score and command determine the factor used to rescale the resampled translation and rotation increments.</figcaption></figure>
+<figure><img src="assets/2610.05734/fig4.webp" alt="fig4"><figcaption>Figure 4 The signal and the response. (a) Cosine inconsistency along human demonstrations of five LIBERO-90 tasks, with peaks during grasping and placement. (b) The mapping from cosine inconsistency to the rescaling factor under the 2× and 0.5× commands.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">研究在 50 个 LIBERO 仿真任务和 4 个真实机器人任务上进行了评估，对比了 π0.5、Fast-WAM 和 Flow Matching 三种策略。基线包括简单的重采样（Vanilla Resampling）和无 CI 缩放的变体（w/o CR）。结果显示，FreeSpeed 在加速和减速指令下均显著优于基线。在仿真中，保持任务成功率的执行速率范围从 0.22×到 2.53×；在真实机器人任务中，平均成功率达到 94.0%，与冻结策略的 93.8% 几乎一致，且执行速率范围覆盖 0.38×至 1.97×。消融实验表明，引入 CI 缩放是维持成功率的关键，移除后成功率大幅下降。此外，观测分布分析证实，FreeSpeed 能有效减少因速度调整导致的 OOD 观测偏移，特别是在高不一致性阶段。</div><div class="en">—</div><figure><img src="assets/2610.05734/fig3.webp" alt="fig3"><figcaption>Figure 3 Evaluation environments. 50 simulation tasks from LIBERO and four real-robot tasks.</figcaption></figure>
+<figure><img src="assets/2610.05734/fig5.webp" alt="fig5"><figcaption>Figure 6 Observation distribution shift under the 2× command. FreeSpeed remains close to the 1× reference in (a) and (b), while the baselines show larger deviations from the training data, particularly after executing chunks with high cosine inconsistency in (c).</figcaption></figure>
+<figure><img src="assets/2610.05734/fig6.webp" alt="fig6"><figcaption>Figure 7 Comparison with published methods and sensitivity to the two constants. (a) Success change against realized rate. (b, c) The decay rate λ and the factor fs swept in turn.</figcaption></figure>
+</body></html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Feasibility Distance Fields for Heterogeneous Constraints in Robot Configuration Space</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Feasibility Distance Fields for Heterogeneous Constraints in Robot Configuration Space</h1>
+<p class="meta">Xijing Cui, Huayan Pu, Jun Luo, Gang Wang<br>
+<a href="http://arxiv.org/abs/2609.24632v1">abs</a><a href="https://arxiv.org/pdf/2609.24632v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图用数学上的“距离场”统一机器人各种约束，想法很性感。把碰撞、关节限位、柔顺性、力矩全变成“配置空间里的距离”，理论上确实优雅，梯度归一化后直接可比。但作者把“可行性”定义得过于理想化，要求所有约束集必须闭合且非空，这在奇异点附近或动态负载下其实很难保证。而且依赖神经网络近似，虽然用了 Eikonal penalty，但中轴线附近的误差依然明显。与其说是新理论，不如说是把经典距离场理论硬套到了更多约束上，适合理论派，实战派可能觉得调参比写约束还累。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有工作如 Khatib (1986) 和 Zucker (2013) 主要关注工作空间清除，Li (2024) 虽提出配置空间距离场，但仅限于几何碰撞。机器人实际运行中，关节限位、奇异点、柔顺性、力矩余量等指标单位各异，无法直接比较或组合。没有统一度量，控制器难以权衡哪个约束最紧迫。本文旨在解决异构约束不可比的问题，将不同物理量转化为配置空间下的统一距离，提供通用的运动预算。</div><div class="en">—</div><figure><img src="assets/2609.24632/fig3.webp" alt="fig3"><figcaption>Figure 2(a). Static dexterity.</figcaption></figure>
+<figure><img src="assets/2609.24632/fig5.webp" alt="fig5"><figcaption>Figure 2(b). Cartesian compliance.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心是可行性距离场 (FDF)，定义为配置空间到不可行集并集的距离。首先验证各类约束（碰撞、柔顺性等）是否构成“可容许”的闭集，确保连续性。利用经典距离集理论，证明 FDF 满足 1-Lipschitz 连续和单位对偶梯度范数。异构约束通过逐点最小值组合，多机器人场景下梯度呈块稀疏。最后用 SIREN 网络训练，结合距离损失和 Eikonal 惩罚项，学习近似场。具体而言，对于柔顺性约束，必须使用 Compliance 而非 Stiffness 以保证连续性；对于力矩约束，需将负载作为条件输入。该方法避免了不同指标间的任意归一化，直接输出配置空间内的安全余量。整个流程包括：1. 定义约束指标函数；2. 检查闭集性质；3. 构建距离场；4. 神经网络拟合。通过这种方式，不同物理单位的约束被统一为弧度制的距离，使得控制器可以直接比较和权衡。</div><div class="en">—</div><figure><img src="assets/2609.24632/fig1.webp" alt="fig1"><figcaption>Figure 1(c). Union of external and self-collision fields, conditioned on obstacle position.</figcaption></figure>
+<figure><img src="assets/2609.24632/fig2.webp" alt="fig2"><figcaption>Figure 1(a). External-collision FDF along a moving-obstacle trajectory.</figcaption></figure>
+<figure><img src="assets/2609.24632/fig4.webp" alt="fig4"><figcaption>Figure 1(b). Self-collision FDF along a dual-arm trajectory.</figcaption></figure>
+<figure><img src="assets/2609.24632/fig6.webp" alt="fig6"><figcaption>Figure 2(c). Dynamic dexterity.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 UR5e 和双臂单元上测试 7 种场。8000 个配置采样，梯度范数接近 1，投影残差小。外部碰撞和组合碰撞在 3cm 内成功率超 90%。验证了力矩约束随负载条件化的能力。发现中轴线附近近似误差较大，稀疏采样边界处也有问题。证明了统一距离场在数值上的可行性，但计算成本较高。具体指标显示，最大可行侧割线比为 0.920，平均学习梯度范数在 0.994 至 0.998 之间。双臂场景下，梯度稀疏性有效识别了需反应的机器人。尽管存在中轴线误差，但整体证明了该框架在异构约束统一度量上的有效性。</div><div class="en">—</div><figure><img src="assets/2609.24632/fig7.webp" alt="fig7"><figcaption>Figure 2(d). Payload-conditioned grinding field.</figcaption></figure>
+</body></html>

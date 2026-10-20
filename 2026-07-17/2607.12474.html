@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>From Observation to Insight: Mechanistic World Models and the Quest for Autonomous Discovery</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>From Observation to Insight: Mechanistic World Models and the Quest for Autonomous Discovery</h1>
+<p class="meta">Ingmar Posner, Anson Lei, Bernhard Schölkopf<br>
+<a href="http://arxiv.org/abs/2607.12474v2">abs</a><a href="https://arxiv.org/pdf/2607.12474v2">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文堪称&quot;AI 科学&quot;界的清醒剂。作者 Posner 等人一针见血地指出，当前大模型在蛋白质折叠 [1] 和天气预报 [2] 上虽能预测，却只是&quot;预测器&quot;而非&quot;解释器&quot;。它们擅长找相关性，却不懂物理机制，甚至像 Vafa 等人 [45] 发现的那样，模型能预测行星轨道却学不会牛顿力学。文章提出的&quot;机制世界模型&quot;（MWM）试图把 AI 从单纯预测拉回科学发现，核心是把知识组织成可复用的机制，而非黑盒映射。但这更像是一个概念蓝图而非工程落地，目前缺乏实证。虽然理论框架漂亮，试图整合因果表示学习 [48] 和方程发现 [56]，但如何从黑盒里挖出机制仍是玄学。不过，把哲学里的&quot;解释&quot;硬套进机器学习，这野心不小，值得围观。它提醒我们，光靠 Scaling Law [8] 堆算力解决不了科学理解问题。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">研究动机在于解决 AI 科学中&quot;数据过剩但洞察匮乏&quot;的困境。现有基础模型 [1, 2] 虽然预测准确，但本质是描述性的，无法揭示生成观测的潜在机制。科学发现需要可复用的解释性结构，而当前 ML 系统依赖数据规模 [8, 9]，在分布外泛化时脆弱，常依赖虚假相关性 [10]。例如，机制可解释性研究 [26, 27] 发现模型内部计算往往反映统计共表达而非因果路径 [43]，甚至物理世界模型 [45] 未能内化牛顿力学。因果表示学习 [48] 虽有理论保证但灵活性不足。因此，需要一种新范式，将知识组织围绕机制而非预测映射，实现从预测到解释的跨越。</div><div class="en">—</div><figure><img src="assets/2607.12474/fig1.webp" alt="fig1"><figcaption>Fig. 1 Mechanistic World Models (MWMs) shift AI from forecasting to discovery. Whereas conventional machine learning organises knowledge around predictive mappings, MWMs organise it around reusable mechanisms as the central compu- tational abstraction linking prediction and experimentation. This enables capabilities including variable, mechanism and structure discovery, explanatory hypothesis generation and experimental design, extending machine learning beyond accu- rate forecasting towards scientific understanding.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">MWM 提出了一种以机制为中心的世界模型架构。整体流程是将观测编码为潜在变量，通过机制进行状态演化预测。创新点在于三个核心组件：1. 变量（Variables）：定义潜在状态空间，包含语义类型，与机制联合学习，确保变量支持紧凑机制。2. 机制（Mechanisms）：定义为 (Σm, fm)，即变量角色签名与变换函数的对，确保跨系统复用，区别于固定因果图。3. 结构（Structure）：通过绑定（Binding）将变量实例化到机制角色，形成解释特定系统的结构。设计原则包括联合预测与解释建模、机制作为基本表示单元、机制复用及层级组织。诱导压力强调简约性（Parsimony）和组合性（Compositionality），鼓励发现紧凑、可复用的变量和机制，而非单纯优化预测损失。这区别于传统世界模型的单体动力学函数，旨在实现可解释、可组合的科学发现。</div><div class="en">—</div><figure><img src="assets/2607.12474/fig2.webp" alt="fig2"><figcaption>Fig. 2 Conceptual anatomy of a Mechanistic World Model. Observations are encoded into latent variables representing the state of a particular system. Reusable mechanisms, each comprising variable roles and a transformation, are instantiated by binding these roles to the learned variables. Different systems are explained through different structures that instantiate and compose a shared library of reusable mechanisms. Parsimony favours compact variables, simple mechanisms and sparse explanatory structures, while compositionality encourages the reuse and recombination of mechanisms across different systems through different explanatory structures.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">本文主要为一篇概念性论文，未提供 MWM 框架本身的实证实验。文中引用的实验证据主要来自相关工作以支撑动机：如机制可解释性在蛋白质模型 [37, 38] 上发现生物概念，但在单细胞模型 [41, 42] 上仅捕获统计共表达 [43]；物理世界模型 [45] 能预测轨道却未内化牛顿力学。方程发现方法 [56, 58] 在已知物理系统上有效，但难以扩展到开放环境。这些现有工作的局限性（如缺乏机制内化、变量抽象难发现）构成了 MWM 提出的依据。论文未展示新数据集、基线对比或消融实验，而是通过理论分析论证了现有方向（如 MoE [62]、CRL [48]）的不足，并描绘了 MWM 的潜在能力，如抗遗忘和组合泛化。</div><div class="en">—</div>
+</body></html>

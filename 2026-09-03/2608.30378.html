@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PAVE: Predictive Alignment and Value-Guided Evolution for World-Action Policies</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>PAVE: Predictive Alignment and Value-Guided Evolution for World-Action Policies</h1>
+<p class="meta">Botong Zhao, Fang Yu, Tim, Senhua Zhu, Xinyuan Chen, Yue Lu<br>
+<a href="http://arxiv.org/abs/2608.30378v1">abs</a><a href="https://arxiv.org/pdf/2608.30378v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">PAVE 这论文算是给 VLA 模型打了一剂“清醒剂”。它没搞那些花里胡哨的在线推理，而是把“预测世界”和“评价好坏”拆得明明白白：训练时疯狂预测未来并打分，上线时只保留最精简的“正反馈”执行器。这种“训练时卷生卷死，上线时躺平输出”的策略确实聪明，既保留了 JEPA 的感知能力，又解决了行为克隆“来者不拒”的毛病。不过，作者也得承认，这方法离线计算量巨大，还得轮训三次，对于资源有限的团队来说，这“进化”成本有点高。而且它把未来预测当训练辅助，上线直接砍掉，虽然快，但万一环境突变，这种“短视”的在线策略会不会像没带导航的司机一样迷路？总之，是个在效率和性能间找平衡的狠活，但别指望它能像人类一样实时“思考”未来。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有的 Vision-Language-Action (VLA) 模型虽然能直接生成动作，但标准的行为克隆（Behavior Cloning）存在两个致命短板。首先，它们缺乏对多时间尺度场景演变的显式描述，导致模型只学动作不学物理规律（Miao et al., 2026; Sun et al., 2026）。其次，部署过程中产生的轨迹质量参差不齐，好坏混在一起训练，导致模型既学到了有效动态，也学到了无效甚至有害的行为。虽然 JEPA-WAM 等方法引入了未来预测，但单一固定偏移量只能捕捉局部运动，无法覆盖长程任务进度（Lin et al., 2026）。另一方面，像π*0.6 这样的价值引导方法虽然能筛选数据，却未能显式提升策略的多时间尺度过渡表示（Physical Intelligence et al., 2025a）。PAVE 旨在解决这一矛盾：既要利用所有有效轨迹学习物理过渡，又要只执行高质量动作，实现“预测归预测，决策归决策”的解耦。</div><div class="en">—</div><figure><img src="assets/2608.30378/fig1.webp" alt="fig1"><figcaption>Figure 1: Conceptual positioning of PAVE. Predictive correctness and behavioral desirability are complementary, while both auxiliary modules remain training-time or offline components.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">PAVE 的核心架构分为训练时的预测对齐与价值引导进化，以及上线时的直接执行。整体流程包含三个关键模块：<br>1. 多时间尺度预测世界动作学习：Actor 基于当前观测、语言指令和 proprioception 生成动作。训练时，除了标准的 Flow Matching 动作损失外，引入了双重预测目标。一是局部固定偏移 JEPA 目标，捕捉短程物理变化；二是轨迹相对的多时间尺度对齐（Multi-horizon Alignment），在剩余轨迹的 25%、50%、75% 和 100% 处设置锚点，强制模型学习从局部到长程的任务进度。这些预测目标仅用于优化共享的 Qwen 表征，不直接参与动作生成。<br>2. 分布价值引导经验标注：独立训练一个分布状态价值 Critic，基于累积的部署轨迹计算 N-step 优势（Advantage）。根据优势值，将动作块标记为“正”、“负”或“空”文本条件。这实现了数据层面的筛选：所有有效轨迹都贡献物理信息，但只有相对高质量的动作块被标记为正样本用于策略更新。<br>3. 优势条件策略进化（ACP）：将上述标签作为文本条件（如“Advantage: positive”）拼接到任务指令中，重新训练 Flow Matching Actor。训练轮次中，Actor 始终从同一基础模型初始化，仅利用累积数据和新的优势标签进行迭代。上线时，Critic 和预测器被完全移除，Actor 仅接收“正”条件，直接输出动作，保持低延迟。</div><div class="en">—</div><figure><img src="assets/2608.30378/fig2.webp" alt="fig2"><figcaption>Figure 2: Overview of PAVE. Multi-horizon current–future alignment supplies training-only predictive supervision, while the offline value branch converts accumulated trajectories into advantage text that is concatenated with the task. The deployed path retains only the current-observation predictor and flow-matching action expert.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">论文在 LIBERO、LIBERO-Plus（含7种扰动）和 RoboTwin 2.0（50个双臂任务）三个基准上进行了评估。相比 JEPA-WAM 和π*0.6，PAVE 在平均成功率上分别提升了 2.6/6.0/6.6 个百分点，在长程任务和抗扰动场景下优势明显（如背景变化提升 7.9 点）。消融实验表明，多时间尺度预测目标贡献了约 3.5 点的提升，而价值引导进化（ACP）进一步带来了 2.5-3.2 点的增益。在线效率方面，PAVE 保持了与 JEPA-WAM 相同的模型大小（1.29B）和内存占用，推理延迟仅增加 0.2ms，证明了其“训练时重、上线时轻”的设计有效性。</div><div class="en">—</div><figure><img src="assets/2608.30378/fig3.webp" alt="fig3"><figcaption>Figure 3: Representative qualitative trajectories in simulation (top) and on a real robot (bottom). Seven frames per row illustrate approach, interaction, and completion; the real-robot sequence is a qualitative demonstration rather than a quantitative evaluation.</figcaption></figure>
+<figure><img src="assets/2608.30378/fig4.webp" alt="fig4"><figcaption>Figure 4: Qualitative comparison of frozen visual encoders on matched input images. From top to bottom, the figure shows the source images followed by response maps from DINOv2, V-JEPA 2.1, and LingBot-Vision.</figcaption></figure>
+</body></html>

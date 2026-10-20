@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dexterous Robot Manipulation from Human Demonstrations via Contact-Anchored Retargeting and Residual Policy Learning</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Dexterous Robot Manipulation from Human Demonstrations via Contact-Anchored Retargeting and Residual Policy Learning</h1>
+<p class="meta">Zihao Yang, Chengyuan Liu, Yu Zhou, Runze Lv, Tianyu Cui, Sheng Yi<br>
+<a href="http://arxiv.org/abs/2609.24093v1">abs</a><a href="https://arxiv.org/pdf/2609.24093v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图解决灵巧操作中最头疼的“接触力缺失”和“形态鸿沟”问题。作者很聪明地意识到，人类手到机器人手的迁移，核心不是关节角度，而是接触结构。用单一个残差策略（Residual Policy）搞定物理修正和动态可行性，确实省去了大量 per-task 的 RL 训练麻烦，算是给仿真训练省了笔钱。不过，依赖动捕数据（Mocap）本身成本就不低，虽然比真机试错强，但离真正的“视频即策略”还有距离。而且“一个策略通吃所有任务”听起来有点理想化，复杂物理交互下的泛化能力仍需观察。总的来说，这是一个在仿真到真机（Sim2Real）路径上非常务实的优化，把数据清洗和物理一致性修复变成了可复用的流水线，值得给个好评，但别指望它能替代所有真机微调，毕竟真机上的微小误差可能还是会搞砸。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">灵巧操作的核心在于手指与物体的精确接触，但现有数据源存在致命缺陷。遥操作（Teleoperation）虽为标准，但依赖熟练操作员且难以传递触觉反馈（Gao et al., 2025），视频数据虽易获取却丢失了关键的接触力信息（Zheng et al., 2026）。现有 real2sim2real 流水线通常将物理重建视为每任务工程，需为每个技能单独设计奖励函数和训练（Qin et al., 2022b; Zhao et al., 2025），导致扩展性差。此外，不同形态的手（embodiment）直接映射关节角度会失败（Qin et al., 2022a）。本文旨在通过识别“接触结构”作为可迁移内容，并利用单一残差策略解决物理一致性，从而在不依赖真机训练数据的情况下，实现从人类动捕到多形态机器人的技能迁移。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分为三阶段。首先，Physics Refinement 利用 Isaac Gym 中的模拟 MANO 手，通过一个跨任务共享的残差 RL 策略（Residual RL Policy）重新执行动捕记录，恢复缺失的接触力和接触点标签，而非单纯跟踪关节轨迹。其次，Contact-Anchored Retargeting 将恢复的接触结构迁移到目标机器人手，优化目标不是关节角度，而是手指表面区域与物体接触点的几何匹配，这使得优化目标独立于手部形态。最后，Robot Residual Learning 引入第二个残差策略，针对机器人执行器的动力学限制（如扭矩、腱耦合）进行微调，恢复动态可行性。整个流程中，物理修正和动态恢复共享相同的残差控制公式，且无需真机训练数据，仅依赖仿真中的域随机化（Domain Randomization）实现 Sim2Real 迁移。</div><div class="en">—</div><figure><img src="assets/2609.24093/fig1.webp" alt="fig1"><figcaption>Figure 1. Pipeline overview. Human motion capture records hand and object kinematics at 120 Hz in a room‑scale mocap system. MANO physics refinement re‑executes the kinematic reference with a residual‑RL policy in simulation, recovering per‑frame contacts and forces (contact refinement insets). Contact‑anchored retargeting adjusts the robot hand so that the designated contact regions on its fingers reach the same object‑surface locations as in the human demonstration, transferring the contact pattern rather than copying joint angles. Robot residual learning restores dynamic feasibility via a second residual policy trained in simulation. Both sides share the residual control formulation. Real‑world validation freezes the policy and transfers it to physical hardware with zero real‑robot trai</figcaption></figure>
+<figure><img src="assets/2609.24093/fig2.webp" alt="fig2"><figcaption>Figure 2. Data capture and processing. (a) Room‑scale optical motion‑capture system with 22 infrared cameras and synchronized RGB‑D sensors. (b) Processing pipeline: raw mocap markers are pre‑processed into the MANO coordinate frame, fitted to the MANO hand model (Romero et al., 2017), and passed through physics simulation to obtain contact force annotations.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验覆盖了 25,454 条单臂轨迹和 25 条双臂任务，对比了 DexPilot、Vector 及 Spider 等基线。在物理一致性测试中，引入残差修正后，单臂成功率从 7.26% 提升至 59.31%，双臂从 16.0% 提升至 62.4%，且对未见过的 YCB 物体也能零样本泛化（72.4%）。跨形态实验中，同一策略在 DexHand 021、Shadow、Allegro 四种不同手上均能稳定执行。真实硬件验证了四个接触丰富的双臂任务（如叠杯子、倒水），成功率超 50%，且无需真机微调。消融实验表明，接触力信息能显著提升 Diffusion Policy 的性能（+11.8 pp）。</div><div class="en">—</div><figure><img src="assets/2609.24093/fig3.webp" alt="fig3"><figcaption>Figure 3. Dual‑hand evaluation grouped by task type (25 tasks, 250 trajectories, ±10% object‑size perturbation). Each row aggregates all tasks of a given type; Overall is the aggregate across all types. Gray: without residual correction; blue: with residual correction. Left: task‑level success rate; right: attempt‑level success rate.</figcaption></figure>
+<figure><img src="assets/2609.24093/fig4.webp" alt="fig4"><figcaption>Figure 4. Real‑world hardware setup: two 6‑DoF JAKA Mini 2 arms with DexHand 021 and two RealSense D435 cameras.</figcaption></figure>
+<figure><img src="assets/2609.24093/fig5.webp" alt="fig5"><figcaption>Figure 5. Real‑world execution of four tasks. Per task, the top row shows the human demonstration (green background) and the bottom row shows the robot execution, with time progressing left to right. From top to bottom: stacking paper cups (7/10), passing &amp; standing a bottle (5/10), pouring water (6/10), and in‑hand bottle reorientation (3/10).</figcaption></figure>
+<figure><img src="assets/2609.24093/fig6.webp" alt="fig6"><figcaption>Figure 6. Cross‑embodiment residual policy execution. Four morphologically distinct hands (DexHand 021, DexHand 021Pro, Shadow Hand, and Allegro Hand) execute the same retargeted grasp‑and‑lift reference using the residual policy (Sec. 3.4). Snapshots show five phases: Start, Approach, Grasp, Lift, and Release.</figcaption></figure>
+</body></html>

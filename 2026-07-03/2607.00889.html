@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DeWorldSG: Depth-Aware 3D Semantic Scene Graph Generation via World-Model Priors</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>DeWorldSG: Depth-Aware 3D Semantic Scene Graph Generation via World-Model Priors</h1>
+<p class="meta">Seok-Young Kim, Abdelrahman Elskhawy, Taewook Ha, Dooyoung Kim, Eunjae Shin, Benjamin Busam<br>
+<a href="http://arxiv.org/abs/2607.00889v1">abs</a><a href="https://arxiv.org/pdf/2607.00889v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 3D 场景图生成加了点“世界模型”的佐料，试图解决传统方法里物体位置飘忽不定、关系漏判的问题。DeWorldSG 把物体建模成概率 3D 高斯分布，而不是死板的点或框，这点挺聪明，毕竟真实世界哪有那么多精确坐标。它用 V-JEPA 2 这种视频世界模型来补全关系，算是蹭了热点。结果确实漂亮，在 3DSSG 上关系召回率暴涨 77%，听着很爽。但仔细想想，它还是依赖 2D 检测器的稳定性，如果摄像头一抖，物体分类跨帧不一致，图就碎了（见 Fig. 6）。而且“世界模型”在这里更多是个辅助先验，真要是端到端的世界模型决策，这架构还差点火候。总的来说，是个稳健的感知层改进，但别指望它能直接指挥机器人干活，更多是作为下游任务的可靠输入。</div><div class="en">...</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">具身智能和 AR 系统需要理解物体间的空间关系，而不仅仅是识别物体。现有的 3D SSG 生成方法，如基于点云的方法 [42,44,45] 对重建质量太敏感，容易受位姿漂移影响；而基于 2D 提升的方法 [10,13,21] 虽然鲁棒，但往往因为帧间独立推理导致关系缺失或几何不稳定。特别是 FROSS [13] 虽然引入了高斯分布，但缺乏显式的深度分布建模，导致边界深度失真。DeWorldSG 指出根因在于将场景图生成视为独立帧级预测，忽略了时空上下文。真实环境中，物体几何存在不确定性，关系应随时间累积证据而非单次观测。因此，需要一种能处理深度噪声、跨帧融合对象，并利用世界模型先验补全关系的增量式框架。</div><div class="en">...</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">DeWorldSG 的整体流程分为三步。首先，从 RGB-D 序列生成帧级 2D 场景图，检测物体并预测关系。接着，核心创新在于“深度感知 3D 高斯表示”。它利用 SAM 生成的掩码引导深度采样，并通过“双域深度细化”（Dual-Domain Depth Refinement, DR）过滤空间域和深度分布域的噪声，消除飞点，得到更稳定的实例级 3D 高斯分布（均值和协方差），而非单一深度值。然后，基于 Hellinger 距离和类别距离进行增量式全局图融合，跨帧合并同一物体。最后，针对关系边，利用 V-JEPA 2 视频世界模型提取时空先验。对于几何邻近的物体对，提取 16 帧视频 clip，通过冻结的 V-JEPA 2 骨干和轻量级探针预测关系分布。当视觉证据熵值高（不确定）时，融合世界模型先验，否则保留视觉预测，以此抑制幻觉关系并增强时空一致性。</div><div class="en">...</div><figure><img src="assets/2607.00889/fig1.webp" alt="fig1"><figcaption>Fig. 2: Overview of DeWorldSG. Given RGB-D image sequences, DeWorldSG first constructs frame-wise 2D scene graphs by detecting objects and extracting their rela- tionships (a). The detected instances are lifted to depth-aware probabilistic 3D Gaus- sians through mask-guided depth filtering and dual-domain depth refinement (b). Fi- nally, spatiotemporal predicate priors from a video world model are aggregated and fused with visual predictions to incrementally merge local graphs into a globally con- sistent 3D semantic scene graph (c).</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">作者在 3DSSG 和 ReplicaSSG 两个室内场景基准上进行了评估。相比 IMP [46], FROSS [13] 等基线，DeWorldSG 在关系召回率上提升显著，3DSSG 上 Relation Recall 达 50.2%（+77.4%），ReplicaSSG 上达 38.2%（+71.3%）。消融实验验证了各模块有效性：仅 2D 提升性能最低；加入掩码引导深度采样后提升明显；双域深度细化（DR）进一步去除噪声；引入 V-JEPA 2 世界模型先验比使用 DINOv2 [30] 静态特征效果更好，证明时空上下文对关系推理至关重要。此外，即使使用 ORB-SLAM3 [5] 估计的位姿而非真值，性能下降有限，显示了鲁棒性。但 Fig. 6 也展示了跨帧分类不一致导致的失败案例，这是当前架构的短板。</div><div class="en">...</div><figure><img src="assets/2607.00889/fig2.webp" alt="fig2"><figcaption>Fig. 4: Qualitative comparison of 3D SSG generation results on ReplicaSSG. (Zoom for details)</figcaption></figure>
+<figure><img src="assets/2607.00889/fig3.webp" alt="fig3"><figcaption>Fig. 6: Failure case caused by in- consistent 2D object classification across frames.</figcaption></figure>
+</body></html>

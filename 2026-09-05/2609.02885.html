@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Discriminative World Models for Web Agents</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Discriminative World Models for Web Agents</h1>
+<p class="meta">Kelvin Li, Dhruv Pendharkar, Anish Pahilajani, Chuyi Shang, Leon Oks, Leonid Karlinsky<br>
+<a href="http://arxiv.org/abs/2609.02885v1">abs</a><a href="https://arxiv.org/pdf/2609.02885v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 Web Agent 的世界模型来了个“去格式化”手术。以前的模型像复读机，拼命模仿 HTML 或 AXTree 的固定格式，结果往往忽略了动作带来的关键差异。作者提出“预测状态匹配”，让模型学会“找不同”而不是“抄作业”。这思路挺对路，毕竟 Agent 选动作时，关心的是“点了这个按钮页面会变啥”，而不是“页面代码长啥样”。不过，依赖 LLM Judge 来打分匹配度，难免有“自说自话”的嫌疑，毕竟 Judge 也是模型。虽然实验在 WebArena 上效果不错，但泛化性还得看后续。总的来说，这是一次把世界模型从“生成器”变成“判别器”的有趣尝试，虽然没完全摆脱对大模型的依赖，但方向值得点赞。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">Web 导航本质是部分可观测的多步决策问题 (Gu et al., 2025; Chae et al., 2025a)。现有 Agent 多依赖反应式预测，缺乏对替代动作的比较。引入世界模型进行 Test-time Action Selection 虽能评估后果，但现有世界模型训练目标与下游 Ranker 错位。例如 WebDreamer (Gu et al., 2025) 和 WebWorld (Xiao et al., 2026) 采用监督式下一状态预测，强制生成固定格式（如文本摘要或 AXTree）。这种目标导致模型可能生成与动作无关的冗余信息，无法有效区分不同动作带来的状态差异。对于动作选择，核心需求是预测状态能区分竞争动作的后果，而非复现特定格式。现有线性轨迹数据集也缺乏同一状态下的多动作分支监督，导致模型难以学习动作与状态变化的因果关系。</div><div class="en">—</div><figure><img src="assets/2609.02885/fig1.webp" alt="fig1"><figcaption>Figure 1: Qualitative example of predicted next-state representations at a single decision point in the WebArena Reddit environment. Given the current state and queried action, our predicted-state-matching world model identifies the specific state change produced by the action. A textual-summary method, WebDreamer (Gu et al., 2025), instead describes the outcome of a different action, while a full structured-state method, WebWorld (Xiao et al., 2026), emits a long AXTree-style representation that largely repeats page structure unchanged by the queried action. The browser pane is rendered from the recorded accessibility tree.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分为数据构建、训练目标与下游应用。首先，利用 WebArena 的 Go-Browse 轨迹构建分支数据集 (Gandhi and Neubig, 2026)。将重复状态合并为状态 - 动作图，每个状态节点包含多个候选动作及其真实下一状态，形成分支决策点。其次，提出预测状态匹配（Predicted-state matching）训练目标。模型输入当前状态和查询动作，生成文本预测表示。训练时，使用固定 Judge（如 Qwen3-32B）接收预测表示和两个候选状态（真实状态 vs 替代状态），Judge 需选出匹配预测表示的状态。奖励函数基于匹配正确性，鼓励模型生成包含动作关键差异的表示，而非固定格式。最后，将生成的预测状态表示作为额外输入，增强 Process Reward Model (PRM) 或 Ranker 的决策能力。该方法解耦了状态表示与格式，使模型能动态调整抽象层级，专注于动作相关的状态变化特征。</div><div class="en">—</div><figure><img src="assets/2609.02885/fig2.webp" alt="fig2"><figcaption>Figure 2: Supervised next-state prediction trains a world model to generate a fixed target representation. Predicted- state matching instead trains the generated representation to distinguish the true resulting state of a queried action from alternative next states reached by other actions.</figcaption></figure>
+<figure><img src="assets/2609.02885/fig3.webp" alt="fig3"><figcaption>Figure 3: Construction of branching decision points from Go-Browse trajectories. (a) The original data is organized as linear trajectories, but some web states are repeated across trajectories. (b) We merge repeated states into a state-action graph, where outgoing edges from the same state correspond to different executed actions and their observed next states. (c) For predicted- state matching, each branching state yields pairwise examples: given a queried action, the world model must produce a representation that distinguishes its true re- sulting state from an alternative next state reached by another action from the same current state.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验分三层评估。1. 预测状态匹配基准：在 WebArena 五个领域测试匹配准确率。相比 WebDreamer-7B 和 WebWorld-8B，本文模型在整体准确率上达到 80.80%，显著优于监督式 SFT 基线（47.77%）。2. WebPRMBench 动作排名：在训练和冻结 Ranker 设置下，加入预测状态表示均优于无状态基线，且优于 WebWorld 状态增强。3. WebArena-Lite 端到端：GPT-4o 作为策略模型，结合 Best-of-5 和状态匹配，任务成功率提升至 28.48%，高于 Bo5 的 21.82%。消融实验表明，匹配目标比固定格式生成更能提升下游决策性能。</div><div class="en">—</div>
+</body></html>

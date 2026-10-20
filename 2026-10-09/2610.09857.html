@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Towards Accurate End-Effector Localization for UMI-Style Robotic Manipulation Teaching</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Towards Accurate End-Effector Localization for UMI-Style Robotic Manipulation Teaching</h1>
+<p class="meta">Junjie Zhang, Deteng Zhang, Zhisong Xu, Bo Sun, Liuyang Li, Yihong Tian<br>
+<a href="http://arxiv.org/abs/2610.09857v1">abs</a><a href="https://arxiv.org/pdf/2610.09857v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文终于有人敢在 UMI 教学里谈定位精度了，毕竟抓不准杯子怎么倒水？MILD 数据集补上了 manipulation 领域 SLAM 基准的空白，不再只盯着策略学习。AprilVINS 把 AprilTag 和鱼眼 VIO 结合，还搞了个“门卫”机制（guarded output），防止烂数据混入轨迹。不过，依赖 AprilTag 算不算“作弊”？毕竟 UMI 的初衷是无标记。另外，仿真重放只是加噪声，真机复现的鲁棒性还得看后续。总的来说，是个扎实的 benchmark 工作，但别指望它解决所有无标记场景。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有 SLAM 基准如 EuRoC [4] 和 TUM-VI [5] 侧重导航，而操作数据集如 DROID [8] 和 RH20T [9] 关注策略学习，忽略了定位层质量。UMI 系统 [1] 虽简化了数据采集，但近距离操作导致遮挡、特征丢失，定位误差直接影响重放成功率。厘米级误差在抓取尚可，但插入任务可能失败。现有工作未将定位误差与任务容忍度关联，导致“低误差但不可用”的轨迹。本文旨在填补这一诊断基准的空白，评估定位是否支持可重放的演示，并建立误差与任务后果的连接。</div><div class="en">—</div><figure><img src="assets/2610.09857/fig1.webp" alt="fig1"><figcaption>Fig. 1. Representative MILD recordings from Insta360 X5 (fisheye), Insight9 (stereo/RGB-D), and MILD-Sim (simulated fisheye) across pick-and-place, wiping, and rearrangement tasks. The montage shows the multi-sensor, cross-domain coverage of the benchmark.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">AprilVINS 采用鱼眼视觉惯性里程计（VIO）作为骨干，结合 AprilTag 辅助。首先，前端在线估计序列局部的 AprilTag 几何布局，无需预先测绘地图，利用已知 ID 和尺寸进行球形 PnP。其次，将验证通过的 Tag 位姿先验插入固定滞后滑动窗口优化中，与视觉惯性因子联合优化。核心创新在于“准入”与“导出”分离：Tag 先验需通过几何、时间戳和 SE(3) 一致性检查才准入优化，防止错误标记污染状态；优化后的状态需经过“受保护延续”规则（guarded continuation）过滤，确保导出的轨迹片段稳定且连续，若优化失败则不导出，避免碎片化。该框架兼容鱼眼畸变模型，避免针孔近似误差，确保广角视野下标记测量的一致性。最后，通过 TCP 链转换输出机器人末端轨迹，并分离精度与可导出性评估。</div><div class="en">—</div><figure><img src="assets/2610.09857/fig4.webp" alt="fig4"><figcaption>Fig. 4. AprilVINS pipeline. Fisheye images and IMU feed a VINS-Fisheye backbone with point, plane, and line features in a fixed-lag sliding window. A parallel fiducial front end detects AprilTags, estimates sequence-local tag layout via spherical PnP, and supplies admitted tag-pose priors to the window. Guarded continuation then filters the jointly optimized body state before TCP conversion.</figcaption></figure>
+<figure><img src="assets/2610.09857/fig6.webp" alt="fig6"><figcaption>Fig. 6. AprilVINS ablation visualizations. Left: local trajectory compar- isons on four MILD tasks; dashed curves are executed TCP references and solid curves are estimates. Right: output-gate continuity check in the YZ plane; curves split at timestamp gaps larger than 0.15 s.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">构建 MILD 数据集，含 86 条真实序列（Insta360 X5/Insight9）及仿真集。对比 VINS-Fisheye、ORB-SLAM3、TagSLAM 等基线。指标包括 APE RMSE、时间完成率和连续性。结果显示，无 Tag 的 VIO 误差在厘米级，AprilVINS(full) 达毫米级（2-10mm）。消融实验表明 Tag 因子提升精度，输出门控提升连续性。MILD-Sim 重放研究量化了任务容忍度（如插入需&lt;3mm），验证了定位误差对任务的影响，为 UMI 教学提供了可量化的诊断依据。</div><div class="en">—</div><figure><img src="assets/2610.09857/fig3.webp" alt="fig3"><figcaption>Fig. 3. MILD-Sim overview. Scene: Isaac Sim workbench and Franka ma- nipulation setup. Task: representative pick-and-place, wiping, and throwing trajectories with executed end-effector paths.</figcaption></figure>
+<figure><img src="assets/2610.09857/fig8.webp" alt="fig8"><figcaption>Fig. 8. Replay success versus translational APE–RMSE on six MILD-Sim tasks. Dashed lines mark the zero-noise baseline and the first bin at or below 50% success; error bars show Wilson 95% confidence intervals.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2610.09857/fig2.webp" alt="fig2"><figcaption>Fig. 2. MILD acquisition overview. Platform: AGIbot G2 with Insta360 X5 and Insight9 under teleoperation. Scene: plain tabletop, tablecloth, and ArUco/AprilTag marker layouts. Task: 15 tabletop families with executed TCP references; orange curves show trajectories and green/blue/red markers denote start, pick/place, and end events.</figcaption></figure>
+<figure><img src="assets/2610.09857/fig5.webp" alt="fig5"><figcaption>Fig. 5. Task-difficulty map from non-AprilVINS baselines. Points show the mean APE RMSE and mean time completion of the three lowest-RMSE evaluable routes per task.</figcaption></figure>
+<figure><img src="assets/2610.09857/fig7.webp" alt="fig7"><figcaption>Fig. 7. 3D practical-route trajectory comparisons for three Table V tasks. Dashed curves are route-specific executed references; solid curves are estimates.</figcaption></figure>
+</body></html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IDEA: Insensitive to Dynamics Mismatch via Effect Alignment for Sim-to-Real Transfer in Multi-Agent Control</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>IDEA: Insensitive to Dynamics Mismatch via Effect Alignment for Sim-to-Real Transfer in Multi-Agent Control</h1>
+<p class="meta">Chenlong Liu, Zhuohui Zhang, Xinyan Chen, Zhipeng Wang, Bin Cheng, Bin He<br>
+<a href="http://arxiv.org/abs/2606.26575v1">abs</a><a href="https://arxiv.org/pdf/2606.26575v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图解决多智能体强化学习（MARL）从仿真到现实（Sim-to-Real）的Reality Gap问题。作者提出IDEA方法，核心思路是效果对齐而非参数对齐。这招挺聪明，与其费劲模拟摩擦力和非线性，不如让高层语义动作在底层闭环控制下产生一致的效果。不过，依赖离散语义动作和静态几何结构限制了灵活性，且同步机制引入了额外延迟。虽然实验数据漂亮，但本质上是用工程手段（同步、闭环）掩盖了模型泛化的不足，属于以巧破千斤的实用主义路线，而非理论突破。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有MARL方法在仿真训练后部署到现实常因动力学失配失效。传统域随机化（DR）[29] 只能扰动预设参数，无法覆盖未建模动态如非线性摩擦 [6]；域适应（DA）依赖在线适应，引入延迟且易累积误差 [32], [34]。多智能体系统还面临动作时序不同步问题，导致协同失效。现有方法要么收敛慢，要么对物理扰动脆弱，难以实现零样本部署。因此，需要一种不依赖精确动力学建模、能对齐动作执行效果的鲁棒迁移方案。</div><div class="en">—</div><figure><img src="assets/2606.26575/fig3.webp" alt="fig3"><figcaption>Fig. 4. Learning curves across four simulated navigation tasks. For fair evaluation, all experiments are conducted with three random seeds, and results are reported as means with 95% confidence intervals</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">IDEA 框架包含三个核心模块。首先是效果对齐（Effect Alignment），将策略输出映射为离散语义动作（如前进、左转），通过底层闭环控制器将其转化为连续控制信号，利用闭环反馈约束仿真与现实的状态转移差异，理论上界定了性能差距。其次是动作同步（Action Synchronization），部署时通过通信机制（协调节点广播执行信号）确保多智能体在同一时刻步执行动作，消除时钟漂移和计算延迟带来的时序失配。最后是并行环境训练，基于 Isaac Gym 构建多几何结构环境，增强策略泛化性。整体流程为：仿真中训练高层策略 -&gt; 现实部署时通过闭环控制器执行语义动作 -&gt; 通信同步确保协同。</div><div class="en">—</div><figure><img src="assets/2606.26575/fig1.webp" alt="fig1"><figcaption>Fig. 1. Overview of the proposed sim-to-real transfer framework and experimental setup. (a) The execution pipeline illustrating the zero-shot deployment of the simulation-trained policy to the real world physical agents. Here, (x, y, θ, v, ω) indicate the agent’s coordinates, yaw angle, linear velocity, and angular velocity, o and a are defined in Sec. III-A. (b) A comparison of the simulation digital twin and the corresponding physical environment, highlighting the observation and execution interface bridging the reality gap.</figcaption></figure>
+<figure><img src="assets/2606.26575/fig2.webp" alt="fig2"><figcaption>Fig. 2. The architecture of IDEA. (a) The simulation training phase, utilizing parallel environments and discretized high-level semantic actions. (b) The distributed hierarchical control structure deployed on the multi-agent system, translating coordinated intents into bottom-level control signals. Here, m and α are defined in III-C. (c) The local action alignment module, employing a closed-loop negative feedback mechanism to ensure high-fidelity physical execution of the intended semantic actions.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在四组导航任务（随机目标、穿越障碍、窄门、迷宫）上测试，对比 DR、RMA、HIM 基线。使用双 UGV 平台进行零样本迁移。指标包括成功率、碰撞率、动作执行误差及时间步差异。结果显示 IDEA 在所有任务中成功率最高，碰撞率为 0%，动作执行误差小于 5%，且智能体间时间步差异为 0。基线方法在复杂场景下碰撞率高且存在显著时序偏差。消融实验表明效果对齐和同步机制对提升鲁棒性至关重要。</div><div class="en">—</div><figure><img src="assets/2606.26575/fig4.webp" alt="fig4"><figcaption>Fig. 3. Overview of the evaluation multi-agent navigation scenarios with increasing geometric and coordination complexity.</figcaption></figure>
+<figure><img src="assets/2606.26575/fig5.webp" alt="fig5"><figcaption>Fig. 5. Radar chart illustrating the zero-shot transfer success rates (%) of the evaluated methods in the real world. Our proposed method demonstrates superior transferability across all tasks compared to the baselines.</figcaption></figure>
+<figure><img src="assets/2606.26575/fig6.webp" alt="fig6"><figcaption>Fig. 6. An example of an actual scene’s occupied grid map, taken from a MazeGame scene. The frame is taken from the baselink of one of the agents.</figcaption></figure>
+</body></html>

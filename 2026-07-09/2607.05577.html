@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Narrative World Model: Narratology-Grounded Writer Memory for Long-Form Fiction</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Narrative World Model: Narratology-Grounded Writer Memory for Long-Form Fiction</h1>
+<p class="meta">Mohammad Saifullah, Thomas Kornmaier, Taaha Kazi, Vasu Sharma, Aditya Sanjiv Kanade, Aanand Kumar Yadav<br>
+<a href="http://arxiv.org/abs/2607.05577v1">abs</a><a href="https://arxiv.org/pdf/2607.05577v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给“世界模型”贴了个“叙事”标签，听起来高大上，实则是在搞长篇小说的“记忆管理”。作者很懂行，没直接测生成质量，而是用固定读者 Opus 4.8 隔离生成能力，专测“记忆检索”，这招挺狠。不过，Embodied AI 同行看了估计会笑：这跟机器人有啥关系？顶多算个文本世界的模拟器。好在实验设计严谨，对比了 Graphiti 这种强基线，证明了结构比图大小重要。特别是他们做了提取器公平性控制，排除了模型质量干扰。就是应用场景太窄，仅限于文学创作，离具身智能还差着十万八千里，但作为长文本记忆基准，确实有点东西，值得文本生成领域关注。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">长篇小说生成面临“局部流畅但全局崩塌”的困境。现有 RAG 系统 (Lewis et al., 2020) 只能检索文本片段，无法回答“谁在何时知道秘密”这类多跳叙事问题。通用知识图谱 (Graphiti, Rasmussen et al., 2025) 缺乏叙事学结构，无法区分事件顺序与揭示顺序。作者指出，作家需要的是“章节安全”的证据，而非通用事实。现有系统在处理 epistemic state（认知状态）和 dramatic function（戏剧功能）时失效，导致多跳推理失败，无法支持跨章节的因果推理。例如，无法判断某个秘密在特定章节是否已被角色知晓，这直接影响了后续情节的连贯性。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">NWM 包含发布、图谱、检索、验证四步。首先，Publish 阶段用提取器将章节转为 typed memory records，包含 focalization、epistemic state 等叙事字段，如人物状态、关系变化、承诺状态。其次，构建 Temporal Knowledge Graph，边带有 validity interval，记录状态随章节的变化，确保因果截断。第三，Query-Conditioned Hybrid Retrieval 结合 BM25 和向量检索，并扩展 1-hop 图邻域，确保只检索当前章节前的证据。最后，RLM QA 进行递归验证。核心创新在于将叙事学概念（如 promise/payoff）作为图结构的一等公民，而非通用实体关系，实现了叙事结构的显式建模。这种设计使得系统能区分“事件发生”与“读者得知”的时间差，解决了传统图谱无法捕捉的叙事逻辑漏洞。</div><div class="en">—</div><figure><img src="assets/2607.05577/fig1.webp" alt="fig1"><figcaption>Figure 1: NWM pipeline. Finalized chapters are extracted into narratology-grounded typed records (focalization/epistemic state, event-vs-reveal order, dramatic function, promise/payoff) and a temporal knowledge graph with validity intervals; query- conditioned hybrid retrieval (BM25, vector, and one-hop graph expansion) assembles a chapter-safe evidence packet from chapters up to the checkpoint only, and a held-constant reader answers or abstains.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在私有和公共语料上测试，使用 176 题多跳基准。基线包括 Simple Search, RAG, GraphRAG, Graphiti。指标为 QA 准确率。NWM Graph Retrieval 在私有集达 0.898，Graphiti 仅 0.574。消融显示，即使 Graphiti 用 NWM 的提取器，性能仍低，证明优势来自表征而非提取。图大小对比显示 NWM 图更小但效果更好，证实叙事结构是关键。统计检验显示差异显著 (p &lt; 10^-5)，且 Graphiti 在 NWM 答对题上几乎全 abstain，说明其缺乏对应表征。公共集结果也复现了排序，验证了泛化能力。</div><div class="en">—</div><figure><img src="assets/2607.05577/fig2.webp" alt="fig2"><figcaption>Figure 2: Multi-hop accuracy for all systems on the private benchmark, plotting the multi- hop column of Table 1.</figcaption></figure>
+<figure><img src="assets/2607.05577/fig3.webp" alt="fig3"><figcaption>Figure 3: Per-narratology-family multi-hop accuracy on the private benchmark, NWM Graph Retrieval versus Graphiti (extractor-matched, Sonnet 4.5).</figcaption></figure>
+</body></html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adaptive-WAM: Quality-Guided Early-Exit Planning from Intermediate Video-Diffusion Features</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Adaptive-WAM: Quality-Guided Early-Exit Planning from Intermediate Video-Diffusion Features</h1>
+<p class="meta">Sining Ang, Yuguang Yang, Yan Wang<br>
+<a href="http://arxiv.org/abs/2608.06008v1">abs</a><a href="https://arxiv.org/pdf/2608.06008v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给自动驾驶世界模型（WAM）的“臃肿”动了一刀。作者发现，既然规划只需要轨迹，何必跑完整个视频生成循环？Adaptive-WAM 在 Wan2.2 骨干上搞了个“多出口”设计，像自助餐一样，吃到满意就撤，不满意再加点菜。虽然听起来像“早退计划”，但实测确实省了 10%-47% 的算力。不过，这种“看心情”的早退机制依赖评分器，如果评分器瞎了怎么办？论文里提到评分器主要做验证而非排序，这暗示了规划奖励的饱和问题，算是给过度追求端到端优化的同行泼了盆冷水。总之，省下的时间能多跑几圈仿真，但能不能真开上高速，还得看零样本迁移的 nuScenes 表现是否经得起考验。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有 WAM 如 DriveVA (Liu et al. 2026) 和 ReCogDrive (Li et al. 2025e) 虽然连接了预测与控制，但部署时往往耦合了迭代视频生成或固定骨干路径。这就像为了吃一口饭，非要煮好一锅汤。作者质疑：到底需要执行多少视频扩散模型才能做出可靠决策？实验发现，视频去噪时间步对规划影响不大，但 DiT 深度影响显著。不同深度的出口解决的问题集只有部分重叠（Figure 2），说明固定深度不是最优解。现有方法如 DriveLaW (Xia et al. 2025) 虽用早期特征，但仍依赖固定接口。Adaptive-WAM 旨在根据当前计划质量动态分配计算，避免不必要的 VAE 解码和迭代去噪。</div><div class="en">—</div><figure><img src="assets/2608.06008/fig1.webp" alt="fig1"><figcaption>Figure 1: Comparison of predetermined and adaptive WAM interfaces. (a) Video-backbone WAMs follow a predetermined frame/action generation path; (b) multimodal WAMs generate visual and action streams along a predetermined path; (c) Adaptive-WAM decodes one trajectory per attempted exit and routes by predicted quality. Future-video prediction supervises training but is not required by the deployed planner.</figcaption></figure>
+<figure><img src="assets/2608.06008/fig2.webp" alt="fig2"><figcaption>Figure 2: Post-RL Jaccard overlap of high-quality scene sets. Off-diagonal values of 0.69–0.82 show substantial but in- complete sharing across exits.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体架构基于 Wan2.2-5B 视频 DiT 骨干，在 6 个中间块（5, 9, 15, 18, 22, 30）挂载独立的 ReCogDrive 风格轨迹扩散头。推理时，模型从浅层开始逐层解码轨迹，每个出口生成一条轨迹。核心创新在于“质量引导的自适应推理”：轻量级 DINOv2-Small 评分器预测规划指标分量（如 NC, DAC, TTC 等），若当前最高分超过阈值 η，则终止并返回累积的最佳轨迹；否则利用缓存的隐藏状态继续深层计算，避免重复前向传播。训练阶段，骨干和轨迹头联合 LoRA 微调，评分器独立训练且梯度隔离，避免干扰策略分布。这种设计保留了视频监督作为表示学习，但部署时跳过视频合成，直接输出轨迹。此外，评分器不强制全排序，而是处理奖励饱和导致的平局，确保在复杂场景下的鲁棒性。具体实现中，轨迹头使用五步去噪，与 ReCogDrive 一致，而骨干仅在前向传播中保留特征，不消耗未来视频帧，显著降低了推理成本。</div><div class="en">—</div><figure><img src="assets/2608.06008/fig3.webp" alt="fig3"><figcaption>Figure 4: Overview of Adaptive-WAM. Wan2.2 retains video supervision while six intermediate blocks feed independent ReCogDrive-style trajectory heads. At inference, one trajectory is decoded per attempted exit; the lightweight DINOv2-Small scorer either returns the best accumulated trajectory or continues from the cached hidden state. Repeated heads and LoRA locations are schematic, and the future-scene branch denotes training supervision rather than the default deployed path.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 NAVSIM v1/v2 上测试，Adaptive-WAM 单轨迹规划达 90.8 PDMS，EPDMS 89.9，优于多数前视世界模型。零样本迁移至 nuScenes 无微调，L2 误差 0.88m，碰撞率 0.08%。效率方面，A100 上平均延迟 170ms，比固定 Block-15 低 10%，比全深度低 47%。消融显示，评分器用 DINO-Small 最佳，Wan 特征无优势；骨干需联合 LoRA 微调而非冻结。此外，Figure 5 展示了轨迹叠加效果，绿色代表高分轨迹，红色代表错误轨迹，验证了评分器的有效性。在 NAVSIM v2 中，该方法在公开协议下取得了最佳的前视世界模型规划结果，证明了中间层特征足以支撑高质量决策。</div><div class="en">—</div><figure><img src="assets/2608.06008/fig4.webp" alt="fig4"><figcaption>Figure 5: Selected layer-wise trajectory overlays. Trajectory colors encode scores: green marks high-scoring trajectories, whereas red marks erroneous trajectories. These cases illustrate both cross-depth complementarity and the score ties that motivate a verifier rather than a strict total-order ranker.</figcaption></figure>
+</body></html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Liquid Latent State Dynamics for Interpretable Turbofan Degradation Modeling</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Liquid Latent State Dynamics for Interpretable Turbofan Degradation Modeling</h1>
+<p class="meta">Weizhi Nie, Weijie Wang, Yuting Su<br>
+<a href="http://arxiv.org/abs/2607.01986v1">abs</a><a href="https://arxiv.org/pdf/2607.01986v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图用液体神经网络（LNN）给涡轮发动机健康建模加个“解释性滤镜”。亮点在于把“健康退化”和“工况变化”强行拆开了，在多工况数据集（FD002/004）上传感器预测误差确实降了，说明解耦有点用。但毒舌一点说，直接回归剩余寿命（RUL）还是跑不过简单的GRU基线。作者自己也承认，这模型是个“可解释的世界模型”，而不是“校准好的寿命预测器”。说白了，它更擅长告诉你“机器怎么变坏的”，而不是精确告诉你“还能跑多久”。对于工业界来说，解释性虽好，但RUL不准可能还是硬伤。不过，这种将预测任务转化为潜在状态演化的思路，确实为PHM领域提供了一种新的可解释性视角，尽管目前还停留在“世界模型”阶段，离完美的工程落地还有距离。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">航空发动机预测性维护的核心痛点在于传感器信号混杂了“健康退化”和“工况波动”。现有工作多关注直接回归RUL（Saxena et al., 2008; Lei et al., 2018），导致隐藏状态被工况噪声污染，缺乏物理意义。虽然世界模型（World Models）和潜在动态（Latent Dynamics）在RL中流行（Ha &amp; Schmidhuber, 2018; Hafner et al., 2019），但工业RUL模型常忽略状态几何结构。液体网络（Liquid Networks）虽能处理连续时间动态（Hasani et al., 2021），但缺乏针对退化轨迹的显式约束。此外，无监督解耦往往脆弱（Bengio et al., 2013）。本文旨在解决状态表示中退化与工况纠缠的问题，学习一个既可用于预测又具备可解释性的健康状态轨迹，填补了现有模型在状态几何可解释性上的空白。</div><div class="en">—</div><figure><img src="assets/2607.01986/fig1.webp" alt="fig1"><figcaption>Figure 1: Motivation for learning latent degradation dynamics. Sensor observations mix health degradation with operating-condition variation; the desired representation is an interpretable hidden-state trajectory whose evolution exposes the degradation trend behind future observations.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程是“编码 - 演化 - 解码”。首先，编码器将历史窗口映射为潜在状态，并解耦为退化分量（z_deg）和工况分量（z_cond）。核心创新是液体过渡模型（Liquid Transition），它计算自适应时间常数和漂移目标，控制状态增量（Δz）。演化时，工况分量调节退化分量的动态。解码器根据演化后的状态重建传感器。训练目标包括传感器重建损失、RUL损失、单调风险损失（确保风险不降）、潜在一致性损失（防止漂移）以及解耦正则项（惩罚退化与工况的协方差）。这种设计强制退化分量沿着健康轴演化，而非单纯拟合传感器。具体而言，液体细胞通过软plus函数计算时间常数，实现自适应更新门控，使得状态变化速率随工况和退化程度动态调整，从而捕捉非线性的退化过程。公式 (4)-(9) 定义了液体单元，公式 (19) 定义了多目标损失函数，确保状态演化的物理合理性。</div><div class="en">—</div><figure><img src="assets/2607.01986/fig2.webp" alt="fig2"><figcaption>Figure 2: Framework of the proposed liquid latent dynamics model. The method encodes a history window into degradation and condition states, rolls the degradation state forward with liquid dynamics conditioned on future operating settings, and decodes the resulting hidden-state trajectory into future sensor predictions. The central object is the learned evolution trend of the latent degradation state, rather than a direct sequence-to-sequence mapping.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在C-MAPSS四个子集（FD001-004）上测试。基线为GRU。主要指标是传感器RMSE、RUL RMSE和状态速度相关性。结果显示，全模型在FD002/004（多工况）上传感器RMSE从0.1058降至0.0627，优于GRU。但RUL RMSE仍略高于GRU。消融实验表明，仅用液体动态不够，必须加RUL和单调性损失，状态速度相关性（Speed ρ）才从0.28升至0.60。PCA可视化显示，退化分量z_deg形成了清晰的退化轨迹，而工况分量较弥散。结论是解耦有效，但寿命校准仍需改进。检测任务上，模型表现接近饱和，证明风险信号可分，但RUL回归仍是短板。FD001/003因工况单一，改进不明显，说明方法针对性强。</div><div class="en">—</div><figure><img src="assets/2607.01986/fig3.webp" alt="fig3"><figcaption>Figure 3: Sensor forecasting RMSE by subset. The proposed Dis+RUL model provides the clearest improvement on the multi-condition subsets FD002 and FD004.</figcaption></figure>
+<figure><img src="assets/2607.01986/fig4.webp" alt="fig4"><figcaption>Figure 4: Normal/abnormal degradation detection metrics for current models. Detection is close to saturated under the selected split; Dis+RUL gives small but consistent gains in AUPRC, balanced accuracy, and F1.</figcaption></figure>
+<figure><img src="assets/2607.01986/fig5.webp" alt="fig5"><figcaption>Figure 5: Latent state-change alignment by subset. Speed ρ measures the Spearman correlation between degradation and the average magnitude of ∆z. The full Dis+RUL objective strongly increases this alignment on FD002 and FD004.</figcaption></figure>
+<figure><img src="assets/2607.01986/fig6.webp" alt="fig6"><figcaption>Figure 6: Training dynamics for FD004 seed 23. Forecasting error decreases, detection F1 becomes high, and speed- degradation alignment rises from near zero to a strong positive value, indicating that the learned state increments become ordered by degradation during training.</figcaption></figure>
+<figure><img src="assets/2607.01986/fig7.webp" alt="fig7"><figcaption>Figure 7: PCA visualization of learned states on FD004 with seed 23, colored by capped degradation. Compared with the GRU hidden state, the proposed model learns a more ordered latent evolution. The degradation component zdeg</figcaption></figure>
+</body></html>

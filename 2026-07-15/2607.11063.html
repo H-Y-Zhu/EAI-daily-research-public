@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AdvNav: Behavior-Guided Black-Box Adversarial Attacks on Vision-Language Navigation</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>AdvNav: Behavior-Guided Black-Box Adversarial Attacks on Vision-Language Navigation</h1>
+<p class="meta">Chenyang Li, Kaige Li, Zeyu Jiang, Changhao Chen<br>
+<a href="http://arxiv.org/abs/2607.11063v1">abs</a><a href="https://arxiv.org/pdf/2607.11063v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 VLN 模型来了记“耳光”，专门搞黑盒攻击。虽然白盒攻击早就被玩烂了，但现实里哪有梯度给你算？AdvNav 这招“行为引导”挺有意思，不靠梯度靠反馈。不过，Perlin 噪声生成的扰动虽然隐蔽（LPIPS 低），但在真实物理世界能不能扛得住光照变化？另外，攻击成功率看着高，但主要是针对特定模型架构，泛化性到底多强还得看。总的来说，是个不错的压力测试工具，但别指望它能直接变成防御指南，毕竟攻击者比防御者总是占优的。作者团队来自港科大和中山大学，这配置在安全领域也算硬核。他们不仅攻击了 Transformer 模型，还顺带测了 LLM 基座的大模型，说明这方法对新兴架构也有效。但黑盒攻击的查询次数限制是个双刃剑，太少了攻不破，太多了又不实用。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">VLN 系统依赖端到端 DNN，天然脆弱 [7]。现有攻击多假设白盒，需访问梯度 [9]，现实中模型私有，不可行。黑盒方法如 ZOO [14]、NES [25] 多针对单步决策，VLN 是多步序列任务，反馈稀疏且延迟 [2]。现有场景级或视角级攻击 [13, 28, 45] 大多依赖白盒或特定训练。因此需要一种无需梯度、仅靠输入输出行为反馈的通用攻击框架，以评估真实部署下的鲁棒性。特别是 VLN 任务中，动作具有时序依赖性，单步优化无法累积长期误差。之前的黑盒方法难以处理这种长程依赖，导致攻击效果大打折扣。</div><div class="en">—</div><figure><img src="assets/2607.11063/fig1.webp" alt="fig1"><figcaption>Figure 1: Comparison between existing and our target adver- sarial settings for VLN. Most prior vision-based adversarial attacks assume a white-box setting requiring access to model gradients, while real-world deployed systems are typically evaluated under black-box constraints with limited compu- tational resources. Our goal is to develop a gradient-free and cost-efficient framework for VLN robustness evaluation.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">AdvNav 框架核心在于“行为反馈”替代“梯度”。Pipeline 是：生成候选扰动 -&gt; 注入 Agent 视觉 -&gt; 执行导航 -&gt; 提取反馈 -&gt; 优化扰动。创新点 1：双粒度反馈。轨迹级用 SPL/NE 衡量整体失败，动作级用奖励分数捕捉潜在决策漂移，还有偏差指示器。创新点 2：混合优化。结合自适应更新（调整扰动强度）和遗传进化（优化噪声空间结构）。扰动用 Perlin noise 参数化，保证空间连贯性。通过相对增益计算选择最优候选，优先选择导致轨迹偏差的扰动，其次才是增加动作风险。具体实现中，扰动被参数化为 Perlin 噪声纹理，模拟镜头上的雾气或灰尘，比随机噪声更逼真。优化过程分轮次进行，每轮生成候选噪声叠加到基线上，评估后根据增益更新基线或翻转方向，最后通过遗传操作进化种群，确保搜索空间的有效探索。</div><div class="en">—</div><figure><img src="assets/2607.11063/fig2.webp" alt="fig2"><figcaption>Figure 2: Behavior-guided perturbation optimization loop under black-box setting. (1) Generate trial candidate perturbations by sampling each noise from the population and overlaying it on the current base. (2) Evaluate the agent under each trial perturbation. (3) Compute attack relative gain using a dual-granularity feedback from trajectory outputs, including trajectory- level score, action-level score, and a deviation indicator. (4) Update the base if the gain improves. Otherwise, retain it and flip the search direction. (5) Evolve the population via selection, crossover, and mutation for the next round (see Sections 3.2 and 3.3).</figcaption></figure>
+<figure><img src="assets/2607.11063/fig3.webp" alt="fig3"><figcaption>Figure 3: Ranking of trial candidate noises by relative gain. Candidates are first split by deviation indicator 𝛾into tra- jectory deviation vs. action risk sets. Within each set, rank- ing is by relative gain (warmer colors = larger positive gain; cooler = negative). Non-positive gains are discarded. The two positive-gain sets are then merged, prioritizing trajectory deviation candidates, to form the final ranked set.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 R2R 数据集上测试，模型选 HAMT [15] 和 MapGPT [12]。基线包括亮度偏移、掩码遮挡、高斯噪声等。指标看 ASR、SPL、NE。AdvNav 在 HAMT 上 ASR 达 49.70%，MapGPT 上最高 87.30%，显著优于基线。消融实验显示双粒度反馈比单粒度好，自适应更新和结构进化都贡献了性能。可视化显示扰动隐蔽（LPIPS 低）且轨迹偏差明显。实验还发现 LLM 模型对全局噪声更敏感，而 Transformer 模型对局部遮挡更敏感，这揭示了不同架构的感知瓶颈差异。此外，攻击耗时约 32 秒每轮，显存占用 2.4GB，计算成本可控。</div><div class="en">—</div><figure><img src="assets/2607.11063/fig4.webp" alt="fig4"><figcaption>Figure 4: Visual comparison of the agent’s first-person observations under different perturbations. We visualize how different adversarial strategies affect the agent’s visual input in two distinct scenes. From left to right: clean input, brightness shift, localized mask occlusion, Gaussian noise, and perturbation from our method. LPIPS score is annotated in the bottom left corner of each image (lower is better), quantifying the perceptual stealthiness of each perturbation.</figcaption></figure>
+<figure><img src="assets/2607.11063/fig5.webp" alt="fig5"><figcaption>Figure 5: Trajectory deviation induced by adversarial perturbations. We visualize the agent’s navigation trajectories before and after our attack on four different scenes. Each map overlays the original trajectory (cyan line) and its endpoint (cyan dot) with the perturbed trajectory (pink line) and disturbed endpoint (pink dot), both originating from the same start position (yellow). Under attack, the agent consistently deviates from its intended trajectory and finally fails to reach the goal.</figcaption></figure>
+</body></html>

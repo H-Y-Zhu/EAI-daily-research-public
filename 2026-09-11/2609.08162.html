@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WorldAgen: Unified State-Action Prediction with Test-Time World Model Training</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>WorldAgen: Unified State-Action Prediction with Test-Time World Model Training</h1>
+<p class="meta">Chi Wan, Kangrui Wang, Yuan Si, Pingyue Zhang, Manling Li<br>
+<a href="http://arxiv.org/abs/2609.08162v1">abs</a><a href="https://arxiv.org/pdf/2609.08162v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 VLA 模型加了个“自适应外挂”。WorldAgen 把世界模型和策略头塞进一个 Transformer，还搞了个 Test-Time Training (TTT) 让模型在测试时“现学现卖”。亮点在于把世界建模从静态预训练变成了动态适应，确实解决了分布偏移的老大难问题。但吐槽点也很明显：TTT 虽然有效，但每次推理都要跑 LoRA 微调，延迟和算力成本谁买单？而且只微调世界模型，策略头不动，万一世界模型学偏了，策略岂不是更废？另外，仿真到真实的验证仅停留在加高斯噪声，离真机部署还有距离。总的来说，是个有趣的思路，但“轻量级”的 TTT 在复杂任务下是否真的轻量，值得怀疑。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有的 VLA 模型（如 RT-1, RT-2）大多依赖静态数据集预训练，一旦部署到未见过的环境（新物体布局、光照变化），性能就崩盘（Kim, Finn, and Liang 2025; Li et al. 2025）。虽然有些工作结合了世界模型（World Models），但它们通常与动作预测解耦，无法在部署时主动适应环境动态（Sakagami et al. 2023）。机器人领域面临的核心痛点是：预训练模型无法捕捉现实世界的分布偏移（Distribution Shifts）。本文旨在解决 VLA 模型在测试时缺乏主动适应机制的问题，试图通过在线微调世界模型来提升泛化能力，填补离线训练与真实世界泛化之间的鸿沟。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">WorldAgen 采用共享 Transformer 骨干网络，包含两个头：Agent Head（预测动作）和 World Model Head（预测状态）。核心创新是 Mixed Unidirectional Attention Mask，通过局部掩码防止当前动作泄露，全局掩码隔离任务指令与世界模型，确保任务无关性。推理采用两步法：先预测动作，再基于预测动作预测下一帧观测。TTT 阶段分为两步：1. 随机探索收集轨迹，重标记为“无语言”；2. 使用 LoRA 仅微调世界模型骨干，策略头冻结。数据预处理支持变长 Chunking，平衡冗余信息与计算效率。具体而言，轨迹被分割为单元，观测和状态通过均匀采样减少冗余，动作则按块预测。训练时采用 Teacher Forcing，测试时自回归。LoRA 应用于 Qwen3 的注意力投影层和 MLP 层，学习率固定。这种设计旨在让模型在推理时快速适应新环境，而不需重新训练整个策略。</div><div class="en">—</div><figure><img src="assets/2609.08162/fig1.webp" alt="fig1"><figcaption>Figure 1: Overview of WorldAgen. (a) WorldAgen Architecture. WorldAgen unifies an agent policy head for task-conditioned action prediction and a world modeling head for task-agnostic state prediction within a single Transformer backbone. At tra- jectory unit i, the agent receives the task instruction Gi, the observation chunk Oi, and the robot state chunk Si, the action placeholder Ap and observation placeholder Op. Then it predicts the action chunk ˆAi. After that, the world model predicts the future observation chunk ˆOi to refine the shared representation of environment dynamics. (b) Two-stage TTT pipeline. Stage 1 performs random exploration in the new environment to collect unlabeled trajectories. Stage 2 adapts the world model using LoRA-based fine-tuning on the observation loss Lo, </figcaption></figure>
+<figure><img src="assets/2609.08162/fig2.webp" alt="fig2"><figcaption>Figure 2: Trajectory Splitting, Chunking, and Two-Step Inference. Example with observation chunk length n = 2 and action chunk length m = 3. (a) Trajectory Splitting and Chunking: a raw trajectory is divided into trajectory units Ui, where each unit contains an observation chunk Oi and a robot state chunk Si obtained via uniform subsampling from m consecutive observations and states, and an action chunk Ai obtained by grouping m actions. (b) Two-Step Inference: the agent model first initializes a zero action placeholder Ap and then replaces it with the predicted action chunk ˆAi. The world model subsequently predicts the next observation chunk ˆOi, conditioned on the updated trajectory unit.</figcaption></figure>
+<figure><img src="assets/2609.08162/fig3.webp" alt="fig3"><figcaption>Figure 3: Proposed Mixed Unidirectional Attention Mask: combines local and global masking. For each trajectory unit, WorldAgen applies a local mask that prevents the action chunk Ap from attending to the corresponding action place- holder Ai. A global mask is further used to construct a task- agnostic world model head, so that the observation place- holder Op will not attend to the task instruction Gi. General structure conforms to strictly causal prediction.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 CALVIN 和 LIBERO 基准测试。CALVIN 上，WorldAgen-TTT 平均长度达 3.93，优于 Seer-Large (3.83) 和 CLOVER (3.53)。LIBERO 上成功率 79.0%，优于 OpenVLA (54.0%) 和 MT-ACT (41.0%)。消融实验显示，世界建模显著提升性能（CALVIN 成功长度 +30.7%）。LoRA Rank 在 16-256 间影响不大，TTT 数据量适中（204 samples）效果最佳，过多反而过拟合。噪声实验证明鲁棒性。此外，对比全量微调，LoRA 效率更高。结果表明 TTT 能有效提升环境理解，但数据量需控制。</div><div class="en">—</div><figure><img src="assets/2609.08162/fig4.webp" alt="fig4"><figcaption>Figure 4: This figure shows the performance of the WorldA- gen model on CALVIN as the number of chunks changes.</figcaption></figure>
+<figure><img src="assets/2609.08162/fig5.webp" alt="fig5"><figcaption>Figure 5: In the comparison between the trajectories before and after TTT, the red regions indicate failures within the trajectory, while the green regions represent successful portions.</figcaption></figure>
+<figure><img src="assets/2609.08162/fig6.webp" alt="fig6"><figcaption>Figure 6: This figure shows that as the amount of data in- creases, the TTT effect gradually increases.</figcaption></figure>
+</body></html>

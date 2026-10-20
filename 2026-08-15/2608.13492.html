@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AlayaWorld: Interactive Long-Horizon World Modeling - Full Technical Report (v1.1)</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>AlayaWorld: Interactive Long-Horizon World Modeling - Full Technical Report (v1.1)</h1>
+<p class="meta">AlayaWorld Team, Kaipeng Zhang, Chuanhao Li, Yifan Zhan, Yongtao Ge, Yuanyang Yin<br>
+<a href="http://arxiv.org/abs/2608.13492v1">abs</a><a href="https://arxiv.org/pdf/2608.13492v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">AlayaWorld v1.1 这次算是把“一致性”刻进了 DNA 里。之前的版本可能还在纠结怎么让相机飞得稳，这次直接把 AdaLN 砍了，让几何说了算。虽然视频质量没拿第一，但那个 Consistency 分数 89.5 确实让人眼红，毕竟长视界交互里“别崩”比“好看”更难。不过物理交互还是有点虚，Causal Fidelity 只有 65.1，说明它可能更擅长“看”而不是“动”。这模型像是个精致的导游，路线规划得明明白白，但要是让你真去搬个砖，它可能还在算折射率。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">长视界交互生成的核心痛点在于“幻觉”和“不一致”。之前的 AlayaWorld 虽然能跑，但 conditioning signals（文本、时空记忆、相机控制）走的是不同路径，导致生成的 latent 和条件在 temporal structure 和 latent representation 上对不上。比如相机控制靠 AdaLN 单独注入，而视觉条件独立编码，这种割裂让模型在推理时容易“精神分裂”。此外，基于 DA3 的深度 warping 空间记忆 [1] 在长序列中容易累积误差。作者希望统一编码结构，让条件信号和生成内容在因果 VAE 空间里“同频共振”，解决长视界下的几何漂移和视觉断裂问题。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体架构维持 backbone 和 chunk-wise autoregressive 不变，重点重构 conditioning 和 memory。1. 空间记忆：抛弃 DA3 深度 warping，改用 streaming 3D point-cache renderer (ViGeo [3])，每生成 chunk 后注册 3D 点，下次渲染时基于规划轨迹重渲染，保证几何一致性。2. 条件编码：视觉条件不再单帧编码，而是用 9-frame 窗口（含前 8 帧）经 causal VAE 编码，确保 temporal context 匹配。3. 时序记忆：像素对齐，4 个 latent 对应 25 帧，消除边界错位。4. Hard Dropout：直接移除 memory tokens 而非置零，避免序列结构泄露信息。5. VAE 统一：训练和推理使用相同像素-latent 接口，减少 stage-specific 差异。6. 相机控制：移除 AdaLN，完全依赖重渲染的空间条件提供视角信息，将相机控制耦合到场景几何中。</div><div class="en">—</div><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 WBench [2] 导航 split 上测试 158 个案例。对比 Yume 1.5, Genie 3 等。Consistency: 89.5 分全场最佳，Perspective 和 Geometric 表现突出，证明几何稳定性强。Video Quality: 79.1 分，Imaging 67.7 分不错，但 Flickering/Dynamic 略逊于 Genie 3。Interaction: Navigation 80.0 分，响应尚可。Weakness: Physical 类别平均 63.1 分，Causal Fidelity 65.1 分，说明物理交互建模仍是短板。Qualitative: 图 1 和图 2 展示了不同场景下的连贯性和结构保持。</div><div class="en">—</div><figure><img src="assets/2608.13492/fig1.webp" alt="fig1"><figcaption>Figure 1 Qualitative results of AlayaWorld on WBench [2].</figcaption></figure>
+<figure><img src="assets/2608.13492/fig2.webp" alt="fig2"><figcaption>Figure 2 Qualitative results of AlayaWorld across different scenes.</figcaption></figure>
+</body></html>

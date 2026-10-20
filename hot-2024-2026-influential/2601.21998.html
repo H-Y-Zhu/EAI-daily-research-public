@@ -1,0 +1,41 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Causal World Modeling for Robot Control</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Causal World Modeling for Robot Control</h1>
+<p class="meta">Lin Li, Qihang Zhang, Yiming Luo, Shuai Yang, Ruilin Wang, Fei Han<br>
+<a href="https://arxiv.org/abs/2601.21998">abs</a><a href="https://arxiv.org/pdf/2601.21998">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图用因果世界模型解决机器人控制中的“幻觉”问题。LingBot-VA 把视频预测和动作解码塞进同一个自回归流里，听起来很性感，但核心还是解决 VLA 模型里视觉和动作纠缠的痛点。作者搞了个异步推理和噪声历史增强来加速，毕竟视频生成太慢了。虽然号称 SOTA，但 50 个演示就能微调，这数据效率确实香。不过，自回归生成在长序列里会不会累积误差？论文里用了 KV Cache 和闭环反馈来缓解，但真实世界的噪声比仿真大得多。总的来说，是个扎实的工程化改进，把世界模型从“看热闹”变成了“能干活”，但离通用具身智能还有距离。此外，MoT 架构虽然灵活，但双流设计增加了显存开销，对于边缘部署是个挑战。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有的 VLA 模型（如π0 [7]）直接把视觉和动作映射，导致表征纠缠，样本效率低。世界模型方法（如 UVA [40], UWM [97]）虽然能预测未来，但多是开环或分块生成，缺乏因果性，未来 token 会影响过去，不符合物理规律。这导致长视界任务容易漂移，且无法实时反馈。本文旨在通过因果自回归建模，统一视频动作，实现闭环控制。特别是针对 chunk-based 方法在长视界下的不一致性，以及 bidirectional attention 违反因果性的问题，提出了 autoregressive formulation。此外，现有方法在推理延迟上难以满足实时控制，需要异步机制。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心是 LingBot-VA，基于 Flow Matching 的自回归扩散框架。1. 架构：双流 MoT，视频流（Wan2.2 初始化）和动作流（小维度）交错，共享注意力。2. 训练：Teacher Forcing，因果掩码（Fig 3），确保时间一致性。3. 加速：噪声历史增强（部分去噪），异步推理（执行时预测，Fig 4），KV Cache 减少计算。4. 记忆：KV Cache 保留历史。动作解码用逆动力学，基于预测的未来视觉状态。视频 VAE 压缩，动作投影。变量块大小训练。初始化策略关键，视频权重插值。</div><div class="en">—</div><figure><img src="assets/2601.21998/fig1.webp" alt="fig1"><figcaption>Figure 1. LingBot-VA : An Autoregressive World Model for Robotic Manipulation. (1) Pretraining: LingBot-VA is pretrained on diverse in-the-wild videos and robot action data, enabling strong generalization across scenes and objects. (2) Comprehensive Evaluation: We conduct extensive experiments on real-world tasks (long-horizon, deformable objects, and precision manipulation) and simulation benchmarks, significantly outperforming state-of-the-art methods including π0.5. (3) Versatile Capabilities: Beyond policy learning, our model supports visual dynamics prediction and inverse dynamics inference from robot videos. (4) Emergent Properties: Our causal world modeling approach exhibits long-range temporal memory and strong few-shot adaptation ability.</figcaption></figure>
+<figure><img src="assets/2601.21998/fig2.webp" alt="fig2"><figcaption>Figure 2. Framework overview: LingBot-VA is conditioned by autoregressive diffusion for unified video-action world modeling. We leverage a dual-stream Mixture-of-Transformers (MoT) architecture that interleaves video and action tokens within a single sequence. At each autoregressive step, the video stream (initialized from Wan2.2-5B) first predicts future latent visual states via flow matching. Then the action stream decodes corresponding actions through inverse dynamics conditioning on the predicted visual transitions.</figcaption></figure>
+<figure><img src="assets/2601.21998/fig3.webp" alt="fig3"><figcaption>Figure 3. Teacher Forcing Attention Mask: Causal attention mask for unified video-action pretraining. Each token can only attend to preceding tokens in the temporal sequence.</figcaption></figure>
+<figure><img src="assets/2601.21998/fig4.webp" alt="fig4"><figcaption>Figure 5. Real-world deployment results. We evaluate LingBot-VA on six manipulation tasks across three categories: long- horizon tasks (Make Breakfast, Pick Screws), precision tasks (Insert Tubes, Unpack Delivery), and deformable &amp; articulated object manipulation (Fold Clothes, Fold Pants). Our method achieves state-of-the-art performance on both metrics.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">数据集：16K 小时，包括 Agibot [2], RoboMind [81] 等。仿真：RoboTwin 2.0 [15], LIBERO [47]。真实：6 个任务（做饭、折叠等）。基线：π0 [7], π0.5 [29], X-VLA [93]。结果：LIBERO 98.5%，RoboTwin 92.9%。长视界任务提升明显（+9%）。消融显示初始化策略（Fig 7）和样本效率（Fig 8）关键。真实世界 50 演示微调。在变形物体和精细操作上也表现优异。</div><div class="en">—</div><figure><img src="assets/2601.21998/fig5.webp" alt="fig5"><figcaption>Figure 6. Detailed task progressions and key execution steps of the six real-world tasks. Each task involves a sequence of manipulation primitives, with scoring criteria detailed in Tables S2 through S4.</figcaption></figure>
+<figure><img src="assets/2601.21998/fig6.webp" alt="fig6"><figcaption>Figure 7. Training dynamic comparison between different action network initialization streategy: Random initialization leads to unstable optimization (high gradient norms) and slow convergence. Although re-using video network weights stabilizes training, the resulting performance is not optimal. Our approach, which initializes by copying pretrained video weights with proper scaling, proves to be the most effective, ensuring smooth training dynamics and faster convergence.</figcaption></figure>
+<figure><img src="assets/2601.21998/fig7.webp" alt="fig7"><figcaption>Figure 8. Sample efficiency comparison. LingBot-VA consistently outperforms π0.5 across various data regimes on the “Make Breakfast” task, demonstrating superior data efficiency in the post-training stage.</figcaption></figure>
+<figure><img src="assets/2601.21998/fig8.webp" alt="fig8"><figcaption>Figure 9. Temporal memory evaluation. Left: Success rates on two memory tasks (Wipe Plate and Search Box). LingBot-VA significantly outperforms π0.5 on both tasks, demonstrating superior temporal state tracking ability. Right: Visualization of evaluation environments.</figcaption></figure>
+<figure><img src="assets/2601.21998/fig9.webp" alt="fig9"><figcaption>Figure 10. Novel object and spatial generalization. LingBot-VA successfully generalizes to objects with varying shapes, textures, and positions.</figcaption></figure>
+</body></html>

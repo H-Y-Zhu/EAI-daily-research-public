@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REFACTOR-VLA: Unsupervised Library Learning of Typed Motor Programs</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>REFACTOR-VLA: Unsupervised Library Learning of Typed Motor Programs</h1>
+<p class="meta">Riyaaz Shaik, Chandru Venkataraman<br>
+<a href="http://arxiv.org/abs/2609.01215v1">abs</a><a href="https://arxiv.org/pdf/2609.01215v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">REFACTOR-VLA 试图用“清醒-做梦”架构给 VLA 模型装上“大脑皮层”，把乱糟糟的动作序列提炼成 typed lambda 程序，这想法很性感，但现实很骨感。亮点在于它用 BEK 内核解决了“行为等价性”这个硬骨头，不再依赖不靠谱的 LLM 或简单的聚类，而是基于世界模型预测结果来定义技能。然而，作者最“凡尔赛”的发现是：把世界模型从 1.88 亿参数堆到 4.3 亿，性能反而全面崩盘！这直接打脸了“模型越大越好”的教条，证明训练目标（InfoNCE）才是王道。吐槽点在于，它最终只学会了 3 个语言抽象，电机原语部分完全没学会，说明这种“语法压缩”在连续动作空间里可能只是“语言游戏”，离真正的通用机器人技能库还有距离。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有 VLA 模型（如 OpenVLA, π0, RT-2）多为“单体”架构，直接输出原始动作，缺乏可复用的行为抽象，导致长程任务表现差且难以解释。现有的技能发现方法存在致命缺陷：AtomicVLA 和 AtomSkill 仅基于对比嵌入聚类，忽略了物理动态；BLADE 和 LRLL 依赖未校准的 LLM 判断行为等价性，无法感知机器人自身的动力学特性 [23, 32, 35, 39]。这些方法无法区分“表面动作不同但物理效果相同”的片段，也无法识别“动作相似但后果迥异”的情况。因此，亟需一种基于系统自身动力学、能严格定义“行为等价性”的无监督技能发现框架，以构建可解释、可复用的技能库，解决长程任务规划难题。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">REFACTOR-VLA 采用“清醒-做梦”循环架构，包含三个核心阶段。首先，Phase A 预热一个基于 DreamerV3 的潜在世界模型 Mϕ，利用 DINOv2 提取视觉特征。其次，Phase C（做梦阶段）利用行为等价核（BEK）对轨迹片段进行聚类。BEK 定义为 Dϕ(τ, τ&#x27;) = wR|Vϕ - V&#x27;ϕ| + wE W2(Pkϕ, P&#x27;kϕ)，即结合预期回报差和 k 步潜在 rollout 的 Wasserstein 距离，确保聚类基于物理后果而非动作序列本身。聚类后的片段通过 Siamese 网络 kχ 进行蒸馏加速。接着，通过语法反统一（syntactic anti-unification）提取 typed lambda 程序，仅当满足最小描述长度（MDL）增益和回报保持（return-preservation）约束时才加入技能库。最后，Phase B（清醒阶段）利用 Typed Program Emitter (TPE) 生成符合 Hindley-Milner 类型系统的程序，并由 Library-Conditioned Action Decoder (LCAD) 基于库中的技能生成动作。整个流程通过 MDL 和回报门控机制，确保技能抽象既紧凑又不会损害性能。</div><div class="en">—</div><figure><img src="assets/2609.01215/fig1.webp" alt="fig1"><figcaption>Figure 1: REFACTOR-VLA architecture. The latent world model Mϕ provides the ground-truth dynamics using a frozen DINOv2 encoder and a DreamerV3-style hierarchical posterior and prior. The Behavioral-Equivalence Kernel (BEK) groups trajectory fragments using a value-plus-Wasserstein divergence. The Siamese amortizer kχ is distilled from Mϕ. The Typed Program Emitter (TPE) generates type-checked lambda terms; the Library-Conditioned Action Decoder (LCAD) is a rectified- flow head. The driver runs three steps per outer iteration t: the wake phase (TPE and LCAD), the sleep phase (the BEK head), and the library-refactor phase (grammatical anti-unification with joint MDL and return-preservation gates).</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 LIBERO 全基准（4 个子集）上评估。关键发现：1. 容量证伪：将 Mϕ 从 188M 增至 430M 参数，NMI 在 4 个子集上全面下降，证明单纯增加模型大小无效。2. 目标形状决定论：在 Phase A 加入辅助 InfoNCE 损失后，NMI 在 4 个子集上显著提升（平均 +0.252），超越最强基线（AtomicVLA, AtomSkill 等）0.184 分。3. 技能库验证：成功从语言槽位提取出 3 个抽象（如“拿起 X 放入篮子”），但电机原语槽位未产生任何抽象，显示当前方法对连续动作的压缩能力有限。交叉种子分析（n=12）显示 NMI 均值 0.705，置信区间 [0.683, 0.729]，接近预设阈值。</div><div class="en">—</div><figure><img src="assets/2609.01215/fig2.webp" alt="fig2"><figcaption>Figure 2: Phase C 4-suite × 4-supervision NMI grid. Bars show mean held-out NMI; whiskers denote ±1σ across n=3 seeds where applicable. The task_index-supervised upper bound (left bars) brackets the Mϕ-distilled cells; +InfoNCE (third bars) recovers 26–98.5% of the upper-bound gap on every suite.</figcaption></figure>
+<figure><img src="assets/2609.01215/fig3.webp" alt="fig3"><figcaption>Figure 3: Twin claim: capacity vs. objective shape. Left: 430M Phase C regresses on 4-of-4 suites (red) at fixed objective. Right: adding the auxiliary InfoNCE term to the 188M Phase A objective lifts 4-of-4 suites (green) at fixed capacity.</figcaption></figure>
+<figure><img src="assets/2609.01215/fig4.webp" alt="fig4"><figcaption>Figure 4: Phase A Mϕ final-step loss across the four LIBERO suites. Blue: 188M baseline. Orange: 430M LR-retuned (LR=1×10−4), available on libero_object_image only. Numbers above each bar are the headline final loss. The 430M LR-retune dominates the 188M baseline on object (0.3555 vs. 0.4176); the short-horizon suites cluster in [0.40, 0.49]; the long-horizon libero_10 cell sits ≈0.16 above the short-horizon minimum.</figcaption></figure>
+<figure><img src="assets/2609.01215/fig5.webp" alt="fig5"><figcaption>Figure 5: Forest plot of cross-provider seed convergence at n=12 pairs. Per-suite point estimates with n=3 bootstrap intervals; combined diamond = 0.705, 95% CI [0.683, 0.729]. Dashed lines: 0.70 strict gate, 0.60 substantial floor. The combined CI is borderline against 0.70 and robustly above 0.60.</figcaption></figure>
+<figure><img src="assets/2609.01215/fig6.webp" alt="fig6"><figcaption>Figure 6: Library learning panel. Top: language abstractions. Bottom: motor subspace sweep.</figcaption></figure>
+</body></html>

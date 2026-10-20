@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Valerant: An Automatic Navigable Game Map Generator via Action-Conditioned World Model Exploration</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Valerant: An Automatic Navigable Game Map Generator via Action-Conditioned World Model Exploration</h1>
+<p class="meta">Yiran Qiao, Feng Wang, Jing Ma<br>
+<a href="http://arxiv.org/abs/2609.09418v1">abs</a><a href="https://arxiv.org/pdf/2609.09418v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图用“生成式视频模型”造“可玩地图”，思路挺野。VALERANT 把预训练的动作条件世界模型（WM）强行改造成能决策的 WAM，不用训练就能从单图生成 3D 地图，这点确实省事儿，省去了传统 3D 建模的繁琐。但吐槽点也很明显：它依赖 SLAM 重建，而 SLAM 在生成视频上容易漂移，虽然加了鲁棒模块，但本质还是“猜”出来的几何，物理一致性存疑，可能经不起复杂物理引擎的考验。而且只在 VALORANT 截图上跑，泛化性是个问号，换个画风可能就不灵了。总的来说，是 AIGC 在 3D 游戏资产生成上的有趣尝试，成功 bridging 了视频生成与 3D 几何，但离真正的“物理引擎”还差口气，属于“看着像那么回事”的阶段性成果。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有世界模型（WM）多停留在 2D 视觉模拟，如 Oasis (Decart et al., 2024) 和 MineWorld (Guo et al., 2025)，无法提供游戏所需的持久 3D 几何。在自动驾驶中，物理环境独立存在，但游戏世界需由模型实例化。Wang et al. (2026a) 定义的 WAM 虽能决策，但缺乏显式空间表示。现有方法结合外部策略，但无法直接生成可导航的 3D 地图。本研究旨在填补视觉模拟与显式 3D 实例化之间的鸿沟，解决游戏地图创建依赖人工、成本高的问题，实现从单图到可玩空间的自动化。特别是针对 3D 游戏需要显式几何支持移动和交互的需求，现有视频生成模型无法提供空间表示，这是核心痛点。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程为“探索 - 重建 - 评估 - 提交”。输入单图后，虚拟代理向冻结的 WM 查询候选动作（前移、转向），生成反事实视频轨迹。Visual SLAM（如 MASt3R-SLAM）将轨迹重建为 3D 点云。探索策略根据覆盖率和前进距离评分，选择最优分支提交至持久地图。创新点包括：1. 反事实探索：基于相同上下文生成多种“如果”视频，直接比较几何效用，而非仅凭视觉；2. 鲁棒性模块：自适应地板估计解决 SLAM 漂移，互补碰撞检测（点云 + 深度）防止穿墙，死胡同回退机制避免陷入局部最优。整个过程无需微调，仅推理时耦合 WM 与 SLAM，将视频预测转化为空间构建。</div><div class="en">—</div><figure><img src="assets/2609.09418/fig1.webp" alt="fig1"><figcaption>Figure 1: Overview of VALERANT. Starting from a single input image, a virtual agent queries the WM with candidate actions to generate alternative what-if video rollouts. Visual SLAM recon- structs the corresponding 3D geometry, and an exploration policy selects the branch with the highest mapping utility. The selected observations are committed to a persistent point-cloud map, which is iteratively expanded into the final 3D game map. The upper panel provides a schematic illustration of the pipeline, while the lower panel demonstrates the process using an example scene.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">使用 VALORANT 游戏截图作为输入，基线为 HY-World 2.0。指标采用 VLM 评估的真实性分数（AS）和人类偏好（UP）。结果显示 VALERANT 在 AS 上达 80%，UP 达 83.33%，显著优于基线。消融实验表明，鲁棒地板估计（RF）防止了地面漂移导致的碰撞误判，互补碰撞检测（COL）避免了穿墙，死胡同回退（DP）解决了局部停滞。定性结果展示了从单图到完整 3D 地图的平滑过渡，证明了框架在自动地图生成上的有效性。实验还验证了在几何漂移和视觉幻觉下的鲁棒性，尽管是单目 SLAM，但通过相对高度归一化等手段提升了稳定性。</div><div class="en">—</div><figure><img src="assets/2609.09418/fig2.webp" alt="fig2"><figcaption>Figure 2: Qualitative Results of VALERANT for Single-Image 3D Game-Map Generation. Each pair of rows presents one scene. The leftmost column shows the input first frame, the middle columns show six generated frames sampled along the agent’s trajectory, and the rightmost column presents a top-down view of the final reconstructed map with the agent’s trajectory overlaid.</figcaption></figure>
+<figure><img src="assets/2609.09418/fig3.webp" alt="fig3"><figcaption>Figure 3: Qualitative ablation of the robust exploration modules. Each pair of rows presents one scene and isolates the effect of a single module by comparing generated frames without (top) and with (bottom) that module. RF, COL, and DP denote robust floor estimation, complementary colli- sion detection, and dead-pocket rewind, respectively.</figcaption></figure>
+</body></html>

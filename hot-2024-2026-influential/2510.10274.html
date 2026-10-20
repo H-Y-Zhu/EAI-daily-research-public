@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>X-VLA: Soft-Prompted Transformer as Scalable Cross-Embodiment Vision-Language-Action Model</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>X-VLA: Soft-Prompted Transformer as Scalable Cross-Embodiment Vision-Language-Action Model</h1>
+<p class="meta">Jinliang Zheng, Jianxiong Li, Zhihao Wang, Dongxiu Liu, Xirui Kang, Yuchun Feng<br>
+<a href="https://arxiv.org/abs/2510.10274">abs</a><a href="https://arxiv.org/pdf/2510.10274">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图用 0.9B 的小模型在 VLA 领域“以小博大”。X-VLA 的核心是 Soft Prompt，把不同机器人的差异编码成可学习向量，而不是搞一堆外挂头。虽然号称“通用”，但本质还是靠数据清洗和提示工程。0.9B 在 Libero 上跑赢 pi0 确实亮眼，但真实世界任务（如叠衣服）数据量只有 1200 条，这算不算“小样本”的极限测试？架构上抛弃 DiT 用标准 Transformer 是个大胆尝试，稳定性如何？总之，省参数是好事，但“通用”二字在机器人领域永远是个坑，期待后续更大规模验证。此外，其 Scaling Law 表现虽好，但 7 种数据源的混合是否掩盖了某些特定领域的短板？对于跨实体迁移，Soft Prompt 是否真的能泛化到未见过的硬件类型，仍需观察。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">具身智能 VLA 模型面临跨实体（Cross-Embodiment）训练的巨大挑战。不同机器人硬件配置、相机设置、动作空间差异巨大，导致分布偏移（Distributional Shifts）。现有方法如 (Physical Intelligence et al., 2025) 主要关注动作解码头分离，忽略了视觉和任务分布的异构性。(Bjorck et al., 2025) 也面临类似问题。缺乏统一表征导致预训练效果差，难以适应新环境。特别是硬件平台不一致、数据收集协议缺失以及跨实体域偏移，使得现有 VLA 模型难以有效利用混合数据。此外，语言提示（Language Prompts）依赖人工脚本，扩展性差；HPT 风格投影易破坏预训练特征。因此，需要一种能自动吸收异构性且无需人工标注的机制。</div><div class="en">—</div><figure><img src="assets/2510.10274/fig2.webp" alt="fig2"><figcaption>Figure 2 | Comparison among four methods in handling heterogeneity in cross-embodiment training.</figcaption></figure>
+<figure><img src="assets/2510.10274/fig3.webp" alt="fig3"><figcaption>Figure 4 | Training curves for various methods of handling heterogeneity.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分为预训练和域适应两阶段。预训练阶段，模型在包含 290K 条轨迹的混合数据集上训练，引入 Soft Prompt 库，为每个数据源分配可学习嵌入。架构上，Vision Encoder 采用预训练 VLM（Florence-Large），Action 生成基于 Flow-matching 策略，使用标准 Transformer 编码器堆叠。Soft Prompt 作为可学习嵌入，根据数据集 ID 查询后注入 Transformer 早期阶段，引导模型学习实体感知特征。数据预处理包括动作对齐（标准化为 EEF pose）和意图抽象（时间下采样生成 30 个锚点）。适应阶段分两步：首先 Prompt warm-up，冻结骨干网络优化新 Prompt；随后 Joint adaptation，联合优化骨干和新 Prompt。此外，采用自定义学习率策略，降低视觉 - 语言模块的 LR，防止灾难性遗忘。</div><div class="en">—</div><figure><img src="assets/2510.10274/fig1.webp" alt="fig1"><figcaption>Figure 1 | X-VLA employs distinctive learnable embeddings, referred to as soft prompt, to effectively address the heterogeneity present in cross-embodiment datasets. This approach, combined with stacking simple self-attention transformer blocks, provides a scalable solution for integrating diverse pretraining datasets and finetuning for a variety of domain-specific applications. Evaluated across 6 simulation benchmark including one autonomous driving bench and 3 real-world robots, X-VLA achieves SOTA performance over most benchmark suites and real-world robotic tasks.</figcaption></figure>
+<figure><img src="assets/2510.10274/fig8.webp" alt="fig8"><figcaption>Figure 10 | Illustration of the detailed architecture of our model. Most parameters are shared across different embodiments, with the exception of the soft prompt and input/output linear projections for action-related tokens. These unshared parameters account for only a small fraction of the total parameters (0.04%). For each dataset, the corresponding domain-specific parameters are queried. The image inputs and language instructions are processed by pretrained Vision-Language Models (VLMs). Notably, only the main view is passed through the entire VLM, while additional views, such as the wrist view, are directed only to the vision encoder. This approach helps preserve the pretrained VLM’s capability, as current VLMs have limited multi-view perception. The proprioception and flow-matching t</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">评估涵盖 6 个仿真基准（Libero, Simpler, Calvin, RoboTwin-2.0, VLABench, NAVSIM）及 3 个真实机器人平台。主要指标为任务成功率及预测误差。X-VLA-0.9B 在 Libero 达到 93% (PEFT)，Simpler-WidowX 54%，超越部分 3B 模型如 pi0。真实世界叠衣任务仅需 1200 条演示，成功率近 100%。消融实验证明 Soft Prompt 优于 HPT 和 Language Prompt，且 Scaling 趋势未饱和。T-SNE 可视化显示 Prompt 成功聚类不同硬件配置。PEFT 仅需 1% 参数即可达到全微调效果。</div><div class="en">—</div><figure><img src="assets/2510.10274/fig5.webp" alt="fig5"><figcaption>Figure 5 | With increased compute, data diversity, and data volume, X-VLA can output reduced validation prediction error, which can lead to enhanced adaptation performance as discussed by Tab. 1.</figcaption></figure>
+<figure><img src="assets/2510.10274/fig7.webp" alt="fig7"><figcaption>Figure 8 | T-SNE visualization of soft prompts on 7 data sources. Figure 9 | Comparison of different prompts on PEFT.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2510.10274/fig4.webp" alt="fig4"><figcaption>Figure 3 | The recipe for mixed data used in pretraining experiments.</figcaption></figure>
+<figure><img src="assets/2510.10274/fig6.webp" alt="fig6"><figcaption>Figure 7 | Real-World Evaluation Results. We evaluate our X-VLA model on three distinct real-world embodiments, each under specific task setups, including simple manipulation, dexterous manipulation, and fast adaptation experiments using PEFT techniques. See Appendix J for for details</figcaption></figure>
+<figure><img src="assets/2510.10274/fig9.webp" alt="fig9"><figcaption>Figure 11 | The illustration of our proposed Soft-Fold datasets.</figcaption></figure>
+<figure><img src="assets/2510.10274/fig10.webp" alt="fig10"><figcaption>Figure 12 | The folding progress of X-VLA-0.9B.</figcaption></figure>
+</body></html>

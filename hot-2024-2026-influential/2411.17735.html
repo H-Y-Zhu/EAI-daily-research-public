@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D-Mem: 3D Scene Memory for Embodied Exploration and Reasoning</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>3D-Mem: 3D Scene Memory for Embodied Exploration and Reasoning</h1>
+<p class="meta">Yuncong Yang, Han Yang, Jiachen Zhou, Peihao Chen, Hongxin Zhang, Yilun Du<br>
+<a href="https://arxiv.org/abs/2411.17735">abs</a><a href="https://arxiv.org/pdf/2411.17735">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给具身智能塞了一堆“照片”当记忆，听起来挺人话的。3D-Mem 用多视角快照代替了枯燥的图或点云，确实让 VLM 更好理解空间关系，毕竟看图比读文本描述“椅子前面”要直观多了。实验数据也漂亮，A-EQA 和 GOAT-Bench 都赢了。但别高兴太早，这玩意儿依赖检测器，检测错了记忆就歪了；而且 VLM 推理慢，实时性是个大坑。所谓的“终身学习”目前还停留在仿真器里，真机器人跑起来估计得卡成 PPT。不过作为场景记忆的新范式，至少比那些只会画框框的图模型强点，算是给 VLM 加了个靠谱的“相册”。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">具身智能在复杂环境里待久了，得有个能存能用的记忆。现有的 3D 场景图 [8] 把空间关系简化成文本，问“椅子前有没有空位”只能靠坐标猜，容易翻车。点云或神经场 [4,5,14,42] 虽然密，但算不动，还不好扩展。更关键的是，它们都忘了“未知区域”长啥样，没法主动探索。这导致 agent 要么瞎撞，要么记不住路，离真正的终身自主差得远。3D-Mem 就是想用图像直接存视觉信息，让 VLM 像人一样看图说话，顺便把没去过的地方也拍下来当路标，解决现有表示无法兼顾空间细节与探索效率的问题。</div><div class="en">—</div><figure><img src="assets/2411.17735/fig1.webp" alt="fig1"><figcaption>Figure 1. With 3D-Mem, explored regions are represented by a set of Memory Snapshots capturing clusters of co-visible objects, i.e., the objects observable in a single image observation, along with their spatial relationships and background context, as shown in the bottom-left example. Unexplored regions are represented by navigable frontiers along with image observations, referred to as Frontier Snapshots.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分三步：建图、更新、决策。核心是两种快照：Memory Snapshots 存已探索区，Frontier Snapshots 存未探索区。建图时用 Co-Visibility Clustering 算法，把同一视角能看到的物体聚类，选最清晰的一张图当快照，背景信息也一起存了。探索时增量更新，新物体来了就重新聚类。为了省算力，加了 Prefiltering，先让 VLM 挑出关键物体类别，只喂相关快照给 VLM 推理。决策时，VLM 根据快照决定是继续探索 frontier 还是直接回答问题。这种设计让 VLM 能直接处理图像，比处理文本图或点云更直观，支持终身记忆管理。</div><div class="en">—</div><figure><img src="assets/2411.17735/fig2.webp" alt="fig2"><figcaption>Figure 2. The memory aggregation process of 3D-Mem. At each step t, the object set Ot is first updated using the object-wise update pipeline introduced in Section 3.1. The newly detected objects and the updated existing objects are then jointly clustered into new memory snapshots using co-visibility clustering (Algorithm 1), which are used to update the memory snapshot set St.</figcaption></figure>
+<figure><img src="assets/2411.17735/fig3.webp" alt="fig3"><figcaption>Figure 3. 3D-Mem as visual input for the VLM in embodied question answering. The VLM first retrieves relevant memory snapshots with prefiltering, then utilizes the frontier snapshots and memory snapshots to perceive the scene and reason about the em- bodied questions.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 A-EQA、EM-EQA 和 GOAT-Bench 三个基准上测了。基线包括 ConceptGraph [8]、Explore-EQA [28] 和盲 LLM。指标看 LLM-Match 准确率和 SPL 效率。结果 3D-Mem 在 A-EQA 上 LLM-Match 52.6，比 Explore-EQA 的 46.9 高不少，SPL 也翻倍。GOAT-Bench 上成功率 69.1，优于 CG。消融显示 Prefiltering 有效，没记忆的版本性能下降。说明图像记忆比纯文本或点云更紧凑高效，但 VLM 推理延迟仍是瓶颈。</div><div class="en">—</div><figure><img src="assets/2411.17735/fig4.webp" alt="fig4"><figcaption>Figure 4. Frame Efficiency of 3D-Mem on EM-EQA. LLM- Match Score vs. Average Number of Frames for 3D-Mem and Multi-Frame both using GPT-4o</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2411.17735/fig5.webp" alt="fig5"><figcaption>Figure 5. Failure Case 1: Some questions in A-EQA are vague and may have multiple reasonable answers.</figcaption></figure>
+<figure><img src="assets/2411.17735/fig6.webp" alt="fig6"><figcaption>Figure 6. Failure Case 2: Due to limitations in perception capabilities and image resolution, the VLM cannot provide the correct answer even when the memory snapshot is correctly chosen.</figcaption></figure>
+<figure><img src="assets/2411.17735/fig7.webp" alt="fig7"><figcaption>Figure 7. Failure Case 3: In some cases, the VLM selects an entirely incorrect memory snapshot and produces unreasonable answers.</figcaption></figure>
+<figure><img src="assets/2411.17735/fig8.webp" alt="fig8"><figcaption>Figure 8. Failure Case 4: Incorrect labels predicted by the object detector can mislead the VLM. Although the VLM can often ignore such errors, in certain cases, these misclassifications cause confusion.</figcaption></figure>
+<figure><img src="assets/2411.17735/fig9.webp" alt="fig9"><figcaption>Figure 9. Failure Case 5: Some target objects are not added to the scene graph due to missed detections by the object detector. The memory snapshot shown above is where the target object should have been detected and assigned to.</figcaption></figure>
+<figure><img src="assets/2411.17735/fig10.webp" alt="fig10"><figcaption>Figure 10. A similar scenario to Figure 9, where the target objects are not detected. However, as they are still visible in other memory snapshots, the VLM still successfully answers the questions.</figcaption></figure>
+</body></html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scalable Behaviour Cloning on Browser Using via Skill Distillation</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Scalable Behaviour Cloning on Browser Using via Skill Distillation</h1>
+<p class="meta">Kaisen Yang, Zheng Jiang, Yuzhao Peng, Houde Qian, Boshi Zhang, Youjie Zheng<br>
+<a href="http://arxiv.org/abs/2606.32014v1">abs</a><a href="https://arxiv.org/pdf/2606.32014v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给浏览器 Agent 开了个“技能包”外挂，核心观点挺对：Agent 不是手残，是脑子缺常识。把人类浏览记录洗成自然语言技能卡，比直接模仿点击靠谱多了。不过，技能库怎么维护？会不会越滚越大变成垃圾堆？作者搞了个技能图来压缩，但检索策略还是靠语义相似度，有点偷懒。实验数据看着挺美，WebArena 涨了 20%，但 ClawBench 这种真实网站波动大的地方，技能真的能扛住 DOM 变化吗？感觉是“用魔法打败魔法”，把动作序列变成了文本描述，本质还是靠大模型推理，算不算真正的具身智能进步？反正比纯 RL 省算力，适合不想训练大模型的小厂。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">浏览器 Agent 的瓶颈不在操作，而在信息不全时的决策。现有工作如 Mind2Web (Deng et al., 2023) 和 WebArena (Zhou et al., 2024) 虽然提供了环境，但 Agent 仍依赖 trial-and-error，因为缺乏决策先验。人类浏览轨迹包含隐性知识，但直接克隆 raw traces 太脆，依赖 DOM 坐标和页面状态，换个网站就废。WebLINX (Lù et al., 2024) 收集了轨迹，但没解决泛化问题。本文认为可复用单元不是动作也不是轨迹，而是自然语言技能。</div><div class="en">—</div><figure><img src="assets/2606.32014/fig1.webp" alt="fig1"><figcaption>Figure 1 Motivation of BrowserBC. BrowserBC turns human browsing traces into reusable natural-language skills, providing agents with decision priors for navigating unfamiliar websites.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">BrowserBC 框架分四步。1. 行为证据抽象：清洗轨迹，过滤噪音，提取任务相关证据单元。2. 程序技能蒸馏：用 LLM 把证据转成结构化技能卡（意图、步骤、恢复策略等），剥离坐标等易变信息。3. 技能库构建：合并相似技能，建技能图（Skill Graph）防止冗余。4. 技能条件执行：推理时检索相关技能作为上下文，Agent 结合当前页面状态执行。核心创新是技能与执行解耦，蒸馏一次可被不同模型复用。技能卡包含意图、适用条件、步骤、里程碑、终止证据和恢复策略，确保可审计和更新。技能图通过节点和边组织技能，支持增量更新和局部检索，避免库膨胀。</div><div class="en">—</div><figure><img src="assets/2606.32014/fig2.webp" alt="fig2"><figcaption>Figure 2 Overview of BROWSERBC. BrowserBC cleans and segments raw browser traces, distills them into structured natural-language skills, organizes the skills into a graph, and retrieves relevant skills to guide browser-agent execution on new tasks.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 WebArena-Hard, ClawBench, OSWorld 上测试。基线是 Base Agent (Skill-Off)。指标是成功率 (SR) 和步数。WebArena-Hard 成功率从 60.5% 升到 81.4%。ClawBench 从 32.9% 升到 68.4%。消融实验显示技能能减少交互步数，且蒸馏器和执行器解耦有效（Sonnet 蒸馏的技能 Qwen 执行也能用）。OSWorld 案例证明技能能迁移到桌面环境，解决路径绑定问题。</div><div class="en">—</div><figure><img src="assets/2606.32014/fig3.webp" alt="fig3"><figcaption>Figure 4 OSWorld-style desktop case studies. In both cases the no-skill agent knows the correct command but binds it to the wrong filesystem context, while the matched skill makes the implicit path-grounding procedure explicit.</figcaption></figure>
+<figure><img src="assets/2606.32014/fig4.webp" alt="fig4"><figcaption>Figure 5 GitLab case demo. The base rollout changes a plausible project setting, while the skill-conditioned rollout edits the checked HTML file and commits the target state.</figcaption></figure>
+<figure><img src="assets/2606.32014/fig5.webp" alt="fig5"><figcaption>Figure 6 Shopping Admin case demo. The skill captures the report-construction procedure: date range, monthly aggregation, completed-order filter, and table reading.</figcaption></figure>
+<figure><img src="assets/2606.32014/fig6.webp" alt="fig6"><figcaption>Figure 7 Reddit case demo. The skill encodes semantic forum selection and routes the housing question to the city-specific forum before verifying the created post.</figcaption></figure>
+<figure><img src="assets/2606.32014/fig7.webp" alt="fig7"><figcaption>Figure 8 Wikipedia and map case demo. The skill preserves the cross-site evidence order: ground the city fact first, then query the map site for the park answer.</figcaption></figure>
+</body></html>

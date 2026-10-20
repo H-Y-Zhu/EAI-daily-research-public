@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TurboVLA: Real-Time Vision-Language-Action Model at 32 Hz on an RTX 4090 with &lt;1 GB VRAM</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>TurboVLA: Real-Time Vision-Language-Action Model at 32 Hz on an RTX 4090 with &lt;1 GB VRAM</h1>
+<p class="meta">Hengyi Xie, Chenfei Yao, Xianjin Wu, Xuanyang Xi, Yiping Tang, Di Xu<br>
+<a href="http://arxiv.org/abs/2607.27205v1">abs</a><a href="https://arxiv.org/pdf/2607.27205v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">TurboVLA 这名字起得挺响亮，直接冲着“涡轮”速度去了。这篇论文的核心操作就是给 VLA 模型“减肥”，把那个臃肿的 LLM 大模型从执行路径里踢出去，换成了轻量级的 BERT 和 DINOv3 直接交互。结果确实惊人，0.2B 参数，不到 1GB 显存，32Hz 实时推理，在 RTX 4090 上跑 LIBERO 还能干到 97.7% 成功率，比 π0.5 这种大模型还快还省。但这事儿也有点“矫枉过正”的嫌疑，把 LLM 的核心推理能力砍掉，虽然执行快，但面对需要复杂规划的任务会不会“脑短路”？毕竟作者自己也承认，这模型主要靠视觉和指令直接映射，缺乏高层语义理解。对于边缘设备部署来说，这绝对是福音，省下的显存和算力能省不少钱，但对于追求通用智能的社区来说，这算不算是一种“降级”？反正对于只要干活不要聊天的机器人来说，这性价比太高了，属于是“实用主义”的胜利。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有的 VLA 模型大多遵循 V → L → A 的路径，把视觉观测投影到 LLM 空间，再解码成动作。像 OpenVLA (Kim et al., 2024) 和 π0 (Black et al., 2025a) 虽然效果好，但计算和显存开销巨大。这种设计导致推理延迟高，限制了在资源受限平台上的实时执行。LLM 的通用推理能力对于底层控制往往是过剩的，执行级控制只需要指令条件化的场景理解，不需要开放式的语言生成。现有的加速方法如 OpenVLA-OFT (Kim et al., 2025) 或 DDVLA (Liang et al., 2026c) 虽然优化了动作生成，但依然保留了庞大的 LLM 骨干，无法根本解决显存和延迟瓶颈。因此，研究动机在于重新审视 VLA 架构，探索是否必须依赖大语言模型作为感知与动作的中心接口，提出一种更直接、高效的 V + L → A 范式，以平衡性能与效率。</div><div class="en">—</div><figure><img src="assets/2607.27205/fig1.webp" alt="fig1"><figcaption>Figure 1: TurboVLA enables compact local deployment and real-time language-conditioned manipulation with 0.2B parameters, 0.9 GB inference VRAM and 31.2 ms policy latency.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">TurboVLA 的整体框架摒弃了 LLM 骨干，采用 V + L → A 的直接映射。Pipeline 分为三步：首先是多模态特征编码，使用 DINOv3 作为视觉骨干提取图像特征，配合轻量级 BERT 编码器处理文本指令，两者投影到共享维度。其次是视觉 - 语言交互模块，这是核心创新点。它不通过 LLM 对齐，而是使用双向交叉注意力机制（Bidirectional Cross-Attention），让视觉特征感知指令，指令特征感知场景，直接融合生成动作就绪特征。最后是动作块解码器，采用 ACT-style 的轻量 Transformer 解码器，并行预测连续动作块，无需自回归生成。这种设计避免了 LLM 的中间表示依赖，显著降低了激活显存和注意力计算成本。此外，机器人状态特征被单独编码并引入解码器，确保控制时的本体感知。整个流程在单次前向传播中完成，实现了低延迟的连续控制。</div><div class="en">—</div><figure><img src="assets/2607.27205/fig2.webp" alt="fig2"><figcaption>Figure 2: From LLM-centric VLA to TurboVLA. (a) LLM-centric VLA predicts actions from large- language-model representations, whereas TurboVLA directly fuses visual and instruction features for continuous control. (b) TurboVLA achieves highly competitive LIBERO performance with substantially lower latency and model scale.</figcaption></figure>
+<figure><img src="assets/2607.27205/fig4.webp" alt="fig4"><figcaption>Figure 5: Vision-language interaction variants. (a) Directly concatenating visual and instruction features. (b) Updating only the instruction features using visual features. (c) Updating only the visual features using instruction features. (d) Bidirectional interaction jointly updates both feature streams.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在 LIBERO、RoboTwin 2.0 和真实机器人平台（AgileX Piper）上进行。LIBERO 上 TurboVLA 以 0.2B 参数达到 97.7% 平均成功率，延迟仅 31.2ms，显存 0.9GB，显著优于 π0.5 (93.6ms, 12.8GB) 和 VLA-JEPA。RoboTwin 2.0 双臂任务中，TurboVLA 达到 60.2% 成功率，优于 π0.5 的 57.0%。真实世界实验中，在抓取、移动卡片等任务上表现稳定。消融实验表明，双向交互设计优于单向或无交互，BERT 等轻量编码器足以替代大模型。这证明了直接 V+L 交互在保持性能的同时，能大幅降低部署门槛，适合边缘设备。</div><div class="en">—</div><figure><img src="assets/2607.27205/fig3.webp" alt="fig3"><figcaption>Figure 4: Real-world evaluation on the AgileX Piper platform. Left: our single-arm setup with a wrist-view RGB-D camera and a third-view RGB-D camera, together with the objects used in the four tasks. Right top: success-rate comparison between TurboVLA and π0.5 on four real-world manipulation tasks. Right bottom: qualitative execution examples of TurboVLA.</figcaption></figure>
+</body></html>

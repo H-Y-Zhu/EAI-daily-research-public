@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CAER: Causal Action Effect Reweighting for World Model Training</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>CAER: Causal Action Effect Reweighting for World Model Training</h1>
+<p class="meta">Jianjie Fang, Xvyuan Liu, Ziyou Wang, Rongze Tang, Zhaolu Wang, Zhuohang Li<br>
+<a href="http://arxiv.org/abs/2608.30897v1">abs</a><a href="https://arxiv.org/pdf/2608.30897v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">世界模型最近火得不行，但大多数训练出来的模型就像个只会画背景的“壁纸生成器”，动作一干预，物理规律全崩。CAER 这招挺聪明，直接给梯度分配搞了个“精准打击”。它不靠外部标注，而是让模型自己对比“有动作”和“没动作”的区别，把损失权重砸在真正受动作影响的地方。这就像老师改作业，不再平均打分，而是盯着错题本重点辅导。虽然本质还是改 Loss，但省去了 SAM 或光流这些昂贵的预处理，在线就能跑。不过，这种“自举”信号会不会在训练初期误导模型？实验显示它确实能收敛得更好，但具体泛化到长程规划还有得看，毕竟只是重加权，没改架构。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有世界模型（如 Wan [1], Cosmos [3]）普遍采用时空均匀的 MSE 损失。问题在于，视频里大部分 token 是静态背景，梯度容易被这些“水”样本淹没，导致稀疏的物理交互（如物体碰撞、机械臂运动）学不好。虽然有人尝试用 SAM [10] 或 RAFT [11] 做外部分割或光流来加权，但这不仅计算开销大，还引入了外部模型的偏差，且无法捕捉动作与未来的因果联系。CAER 想解决的核心问题是：如何在不依赖昂贵外部标注的前提下，让模型自动识别并强化那些真正由动作因果驱动的预测区域，从而提升具身智能的交互可控性。</div><div class="en">—</div><figure><img src="assets/2608.30897/fig1.webp" alt="fig1"><figcaption>Figure 1: CAER overview. CAER identifies and reweights action-responsive tokens online without external annotations. Examples span end-effector trajectories, camera trajectories, dual-arm actions, and pose maps.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">CAER 的核心是因果动作效应重加权。Pipeline 分为三步：首先，构建动作条件分支和零动作分支（通过 Action Dropout 实现），确保模型能学习“无动作”基准；其次，在固定中间噪声水平 $	au_S$ 下，计算两个分支预测速度的差异 $S$，作为动作敏感性的代理；最后，将 $S$ 归一化为权重 $ho$，保持总系数质量不变（Budget-neutral），再应用到 MSE 损失上。创新点在于：1) 在线自计算因果信号，无需外部标注；2) 固定质量重分配而非增加梯度，避免破坏原有优化平衡；3) 引入 Dropout 机制防止某些 token 被永久忽略，保证梯度覆盖。这使得模型能动态聚焦于交互区域，而非背景。</div><div class="en">—</div><figure><img src="assets/2608.30897/fig2.webp" alt="fig2"><figcaption>Figure 2: CAER framework overview. At a fixed intermediate noise level and under shared noise, CAER contrasts the model’s response under the real action and a learned null action to localize action-sensitive tokens, then normalizes the map sample-wise to unit mean. The objective redistributes a fixed coefficient mass toward causally responsive regions, while action dropout keeps every token stochastically supervised.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验覆盖四个异构任务：LIBERO [15], RoboTwin [17], Camera Control [9], PoseAnything [19]。基线为统一 MSE，骨干网络均为 Wan 2.2 5B [1]。结果显示 CAER 在物理一致性、可控性和视觉质量上均优于基线。例如 LIBERO 任务中 EWM Score 从 57.66 提升至 61.79。消融实验表明 Action Dropout 设为 10%、$	au_S$ 设为 0.50 效果最佳。训练曲线显示 CAER 初期略慢于 MSE，但后期反超，说明其聚焦机制随模型能力提升而增强。定性结果图（Fig 3, 5-8）也证实 CAER 的 Loss 图更集中在交互区域。</div><div class="en">—</div><figure><img src="assets/2608.30897/fig3.webp" alt="fig3"><figcaption>Figure 3: Qualitative Results. Generated videos and their CAER loss-supervision maps across four distinct action-conditioning modalities. Darker red regions indicate larger loss values, whereas darker purple regions indicate smaller loss values.</figcaption></figure>
+<figure><img src="assets/2608.30897/fig4.webp" alt="fig4"><figcaption>Figure 5: Camera-control qualitative comparison. Representative camera-control examples and their supervision maps under uniform MSE and CAER. Compared with the spatially broader responses of uniform MSE, CAER places more emphasis on regions associated with camera-induced motion and scene changes while suppressing already modeled background content.</figcaption></figure>
+<figure><img src="assets/2608.30897/fig5.webp" alt="fig5"><figcaption>Figure 6: RoboTwin arm-manipulation qualitative comparison. Representative RoboTwin manipulation examples and the corresponding supervision maps under uniform MSE and CAER. CAER more consistently concentrates responses around the robot end-effector, manipulated objects, and interaction or contact regions, while uniform MSE assigns substantial responses to broader scene regions.</figcaption></figure>
+<figure><img src="assets/2608.30897/fig6.webp" alt="fig6"><figcaption>Figure 7: PoseAnything qualitative comparison. Representative pose-conditioned generation examples and their supervision maps under uniform MSE and CAER. The CAER maps are more focused on articulated subjects and pose-bearing regions, whereas uniform MSE exhibits more diffuse responses over the surrounding visual content.</figcaption></figure>
+<figure><img src="assets/2608.30897/fig7.webp" alt="fig7"><figcaption>Figure 8: LIBERO manipulation qualitative comparison. Representative LIBERO robot-manipulation examples and the corresponding supervision maps. CAER emphasizes the robot, manipulated object, and relevant workspace involved in the action, while uniform MSE spreads supervision more broadly across the scene.</figcaption></figure>
+</body></html>

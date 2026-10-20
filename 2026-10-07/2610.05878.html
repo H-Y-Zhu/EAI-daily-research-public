@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OGAM: Connecting Systematic Testing to Runtime Assurance through Object-Grounded Attention Monitoring for VLA Policies</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>OGAM: Connecting Systematic Testing to Runtime Assurance through Object-Grounded Attention Monitoring for VLA Policies</h1>
+<p class="meta">Haki Darwish, Xiangyu Yin, Changwen Li, Rongjie Yan, Francisco Gomes de Oliveira Neto, Chih-Hong Cheng<br>
+<a href="http://arxiv.org/abs/2610.05878v1">abs</a><a href="https://arxiv.org/pdf/2610.05878v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇 OGAM 论文试图用注意力监控把系统测试和运行时保障连起来，思路挺野。VLA 模型 [1]-[4] 在基准测试里表现尚可，但一遇到没见过的指令组合就原形毕露，论文里甚至说所有生成的 24 条可行指令都没一个模型能完成，这基准测试水分有点大。OGAM 的核心是盯着注意力机制看，把梯度加权注意力投影到物体上，再用 DTW 对齐成功轨迹。优点是无需失败标签训练，靠 conformal prediction 控制误停率。但槽点也不少：完全依赖仿真环境，真实机器人还没测；而且需要成功参考轨迹，要是任务本身就没成功过，这监控器就瞎了。另外，注意力机制到底是不是真正的“解释”还有争议，这里直接拿来当监控信号，有点赌成分。不过能在 5-12 秒内停掉失败，省了 40% 时间，对于安全来说还算有点用。针对 4 个主流 VLA 架构的对比验证，证明了该方法的通用性，但硬件部署仍是空白，且对分割掩码的依赖可能引入额外误差。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">VLA 模型 [1]-[4] 通过自然语言控制机器人，但可靠性评估难。现有基准 [8] 只有少量规范指令，部署时却面临组合爆炸的异常请求。现有测试方法 [15][16] 多为黑盒，且无法穷尽。运行时检测器 [17]-[23] 大多需要失败标签或额外训练，或者依赖动作一致性 [18] 而非内部状态。本文指出，成功和失败执行往往表现出注意力轨迹的差异，但现有工作未利用此信号进行早期干预。OGAM 旨在通过有限测试识别注意力模式，支持在线干预，避免失败完全展开。特别是 [23] 虽关注注意力但未结合物体角色与时间对齐，难以应对速度差异，而本文通过角色通道和 DTW 解决了这一问题，填补了测试与运行时之间的空白。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体流程分离线测试和在线监控。离线阶段，通过动作模板与场景物体的 pairwise 组合生成指令集，LLM 标注可行性，并测试同义改写 [9]。在线阶段，对每个动作查询提取梯度加权注意力图，投影到物体分割掩码上，按指令角色（命名目标、最强竞争者、其余物体、夹爪）聚合为 4 通道时间序列。使用 Open-end DTW [6] 将当前轨迹与成功参考轨迹对齐，计算 on-track 和 completion 两个读值。阈值通过 conformal prediction [7] 在成功轨迹上校准，设定名义误停率 α=0.05。若偏差持续超过阈值（burn-in 2s + sustain 3s），则触发停止。无需失败数据训练，仅依赖成功样本。掩码可用模拟器提供或 SAM2 预测，保证了跨场景的可比性，且无需针对每个模型微调超参数。</div><div class="en">—</div><figure><img src="assets/2610.05878/fig1.webp" alt="fig1"><figcaption>Fig. 1. Combinatorial instruction testing for VLA policies</figcaption></figure>
+<figure><img src="assets/2610.05878/fig2.webp" alt="fig2"><figcaption>Fig. 2. The monitor. Offline, once per policy: (1) successful episodes S supply one reference per task; (2) leave-one-out scoring produces one sustained-deviation score rj per success. Sorting these scores sets the shared height q using the nominal false-stop target α = 0.05. Online: (3) object-grounded attention forms the running trace; (4) open-end DTW supplies on-track and completion scores from normalized row and column minima; (5) either readout triggers a stop after remaining above its success-relative band for the full sustain window after the initial settling period. The α annotation denotes a nominal target (Sec. III-D).</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 LIBERO-Goal [8] 上测试 OpenVLA, OFT, UniVLA, π0.5。87 条组合指令中，4 个模型无一完成 24 条可行指令，暴露泛化局限。OGAM 检测 87-100% 失败，误停 3-5%，中位停止时间 5-12s，节省 39-72% 时间。消融显示，单读值或固定时间对齐性能下降。使用 Segment Anything 掩码检测率略降但误停不变。对比其他信号（如动作轨迹、不确定性），OGAM 综合表现最佳。在 OpenVLA 上，即使没有成功参考，注意力信号也能区分部分失败，但监控器仍需参考。实验表明该方法在无需失败标签的情况下，能有效识别行为替代和危险请求，显著优于现有无训练检测器。</div><div class="en">—</div><figure><img src="assets/2610.05878/fig3.webp" alt="fig3"><figcaption>Fig. 3. Monitored OpenVLA episodes. Top row: the reference at the same moments and at its end. Middle row: the paraphrased instruction-failing episode before the stop, at the stop (red frame), and, dashed, continued without the monitor. Bottom: the monitored signals and their divergence.</figcaption></figure>
+</body></html>

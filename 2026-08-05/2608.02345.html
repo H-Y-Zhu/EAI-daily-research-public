@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Can AI Agents Simulate A/B Test Outcomes? A Validation Framework for Agentic Experimentation</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Can AI Agents Simulate A/B Test Outcomes? A Validation Framework for Agentic Experimentation</h1>
+<p class="meta">Stefan Hut, Lorenzo Masoero<br>
+<a href="http://arxiv.org/abs/2608.02345v1">abs</a><a href="https://arxiv.org/pdf/2608.02345v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文试图用 AI Agent 替代昂贵的线上 A/B 测试，想法很丰满，现实有点骨感。作者把问题形式化为 S-RCT，发现通用大模型当“用户”时太戏精，对干预反应过度，导致效果被高估。虽然提出了校准和配对设计来“打补丁”，能把误差压下去，但本质还是“纸上谈兵”。毕竟这玩意儿不是真机器人，别指望它去拧螺丝，顶多帮产品经理省点流量费。不过，能把误差分解成近似和采样两层，还是有点干货的，至少知道钱花哪儿了。校准后误差降 77 倍，这数字挺唬人，但幅度偏差依然存在，说明模型行为有根本性局限，离完全替代真人实验还有距离。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">在线控制实验（A/B 测试）是科技公司的标配，但每次都要消耗真实流量、工程资源和数周时间，成本巨大。现有研究如 AgentA/B (Lu et al., 2025) 和 PAARS (Mansour et al., 2025) 尝试用 AI 模拟用户行为，但缺乏对估计误差的显式分解，难以诊断是模型不准还是采样不足。这导致无法针对性优化，甚至可能因为个体层面的偏差误导决策。作者希望构建一个可验证的框架，在投入真实流量前低成本筛选候选方案。此外，之前的工作如 Maier et al. (2025) 指出个体层面存在系统性发散，需要更精细的误差控制。工程团队迭代数十个候选方案的成本高昂，亟需一种能低成本 vet 候选者的方法。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心是 Simulated Randomized Controlled Trial (S-RCT) 框架。首先，将总误差分解为代理近似误差和子采样误差，分别对应模型能力和样本量问题。针对近似误差，提出两阶段校准协议：Phase 1 利用预实验数据拟合校正函数，修正 Agent 的过度反应；Phase 2 应用校正函数到真实干预数据。针对子采样误差，采用 Neyman 分配原则优化 Agent 选择，并在 Within-subject 设计中让每个 Agent 同时暴露于处理组和对照组，消除组间差异。整个流程引擎无关，支持任何行为模型，包括微调专家模型。误差分解公式 (Eq 4) 明确了改进方向，校准函数通过 Platt scaling 最小化损失，确保校正后的估计接近历史噪声底限。</div><div class="en">—</div><figure><img src="assets/2608.02345/fig1.webp" alt="fig1"><figcaption>Figure 1: Principled subsampling: (a) efficiency gain from Neyman allocation grows with stratum variance heterogeneity; (b) for a stylized revenue metric, Neyman alloca- tion achieves a given RMSE with fewer agents; (c) simulation pre-screens a treatment across subgroups, flagging the harmed segment before live deployment.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 67 个历史营销 A/B 测试上验证。基线模型方向信号重叠度 0.70，但幅度系统性夸大，导致 Launch alignment 接近随机底限。引入两阶段校准后，平方预测误差降低约 77 倍，接近历史噪声底限。Within-subject 设计使标准误降低 2.4 倍，方向准确率提升。但幅度误差仍未完全消除，表明通用模型在低 stakes 决策中存在行为放大效应。结果证明校准有效，但完全替代真人实验仍有距离，需警惕低频率用户被过滤。Table 3 显示基线指标，Figure 3 展示了校准前后的对比，证明校正函数能有效压缩幅度误差。</div><div class="en">—</div><figure><img src="assets/2608.02345/fig2.webp" alt="fig2"><figcaption>Figure 3: Two-phase calibration. (a) Phase 1: the raw simulator overestimates user activity; Platt scaling learns a correction from pre-period data. (b) Phase 2 result: per-experiment ATE estimates before (red crosses) and after (blue circles) calibration, relative to the historical ATE (black bars). Calibration compresses the magnitude gap by ∼77×.</figcaption></figure>
+</body></html>

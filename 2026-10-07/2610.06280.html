@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Future Anchored Verification and Online Recovery for World Action Models</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Future Anchored Verification and Online Recovery for World Action Models</h1>
+<p class="meta">Zhibin Qin, Zhenxiong Tan, Xinchao Wang<br>
+<a href="http://arxiv.org/abs/2610.06280v1">abs</a><a href="https://arxiv.org/pdf/2610.06280v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 WAM 这种“预测未来”的模型加了个“后悔药”。WAM 靠预测未来帧来指导动作，一旦执行跑偏，剩余动作就废了。现有监控器 [1, 43, 64] 只会喊停，不会指路。FAVOR 很鸡贼，直接把预测的未来帧当锚点，发现不对就告诉模型“回到这里”。虽然提升幅度看着不大（LIBERO 才涨了 0.25%），但在冻结策略下能恢复任务，这本身就有价值。不过，依赖 VLM 生成指令和调 CFG 参数，算是给黑盒加了个外挂，且提升有限，基线已经 97% 了，再涨 0.25% 的实际意义值得商榷。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">WAM 通过预测未来视觉状态来指导动作 [12, 27, 32, 62, 69, 74, 75, 78, 82, 86, 87]。但一旦执行偏离预测路径，剩余动作就失效了。现有的执行监控器 [1, 43, 64, 72, 79] 只能判断何时停止，无法告诉模型该恢复成什么状态。而现有的恢复方法 [11, 50] 往往从策略外部获取目标，忽略了策略本身已知的“未来”。本文指出，WAM 预测的未来帧正是它原本打算经过的状态，这些状态在训练分布内，因此可以作为恢复的锚点。这解决了“何时停”但没解决“去哪回”的问题，且避免了从分布外状态重规划的风险。</div><div class="en">—</div><figure><img src="assets/2610.06280/fig1.webp" alt="fig1"><figcaption>Figure 1: Attention of the frozen WAM under different instructions, with the observation and the random seed fixed. Top: attention of the action tokens. Bottom: attention of the future-video queries over the keys in the video model, under the original prompt, the empty prompt, and their difference. The two conditions produce nearly identical attention maps.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">FAVOR 框架包含两个核心模块。首先是 Anchor Verifier，它利用冻结的 DINOv2 编码器将当前观测与预测的锚点帧编码为 token，结合执行的动作和锚点位置嵌入，通过因果 GRU 在时间维度上追踪偏差，输出失败分数。训练时采用多实例学习策略，利用终端成功/失败标签优化。其次是 Anchor-Guided Recovery，当 Verifier 报警时，VLM 读取锚点、当前观测和任务，生成简短的纠正指令（如“拿起杯子”），而非直接修复像素。为了克服 WAM 对指令不敏感的问题（Figure 1），作者引入 Classifier-Free Guidance (CFG) 增强指令对生成未来的引导，使 IDM 能解码出恢复动作。</div><div class="en">—</div><figure><img src="assets/2610.06280/fig2.webp" alt="fig2"><figcaption>Figure 2: Overview of FAVOR. (a) The frozen WAM predicts future frames and the IDM decodes an action chunk; the predicted frames are retained as anchors. Every ∆steps, the verifier compares the observation with its anchor: a pass continues execution, and the failure interrupts the remaining actions and triggers recovery. (b) The Anchor Verifier encodes the prediction–observation pair with DINO, fuses it with action and horizon embeddings, and outputs a failure score through a causal GRU; an alarm is raised when the score exceeds τ. (c) Anchor-Guided Recovery: a VLM reads the alarmed anchor, the current observation, and the task, and issues a corrective instruction.</figcaption></figure>
+<figure><img src="assets/2610.06280/fig3.webp" alt="fig3"><figcaption>Figure 3: Effect of the guidance scale on recovery predictions. All branches start from the same trigger state and the corrective instruction “pick up the cup”.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 LIBERO 和 LIBERO-Plus 上评估。FAVOR 将基线 WAM 成功率从 97.85% 提升至 98.10%（LIBERO），失败率降低 11.6%。Anchor Verifier 的 AUROC 达 0.992，优于 SAFE-MLP 和 FAIL-Detect。消融实验显示，CFG 参数 γ 需足够大（如 5）才能让纠正指令生效（Figure 3）。直接重规划或无锚点语言纠正效果均不如 FAVOR。在 Object 和 Long 任务上提升最大，说明对指令依赖高的场景受益明显。</div><div class="en">—</div><figure><img src="assets/2610.06280/fig4.webp" alt="fig4"><figcaption>Figure 4: Qualitative examples of Anchor-Guided Recovery on LIBERO. In each case, the top row shows the observed execution and the bottom row the WAM’s retained prediction up to the alarm (orange frame); red circles mark where the observation departs from its anchor. Right of the alarm, native continuation under the original instruction fails (top), while the corrective instruction issued by the VLM (green) restores the anchored condition and the task succeeds (bottom). Both branches start from the same simulator state at the alarm.</figcaption></figure>
+<figure><img src="assets/2610.06280/fig5.webp" alt="fig5"><figcaption>Figure 5: Distribution of the maximum episode score for successful and failed LIBERO episodes under each detector, on its native scale (higher indicates failure); each point is one episode.</figcaption></figure>
+</body></html>

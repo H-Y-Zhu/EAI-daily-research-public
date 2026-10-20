@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GST-Bench: Can VLMs Develop Global Spatial Awareness from Video?</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>GST-Bench: Can VLMs Develop Global Spatial Awareness from Video?</h1>
+<p class="meta">Qifeng Zhang, Kaixiang Huang, Heng Dong, Huang Fang, Junting Chen, Junjie Zhu<br>
+<a href="http://arxiv.org/abs/2608.05747v1">abs</a><a href="https://arxiv.org/pdf/2608.05747v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 VLM 的“空间健忘症”做了个深度 CT 扫描。GST-Bench 不再满足于让模型猜“左边还是右边”，而是直接要求它在视频里转了一圈后，从完全没见过的角度回答“东西在哪”，还得对上顶视图地图。结果很骨感：最强模型 Gemini-3-Pro 才 42.68 分，人类 79 分，这差距比某些开源模型和随机猜测还大。更讽刺的是，号称专为具身智能训练的模型（如 Robix, Cosmos）居然没比通用 VLM 强多少，说明所谓的“具身微调”可能只是治标不治本，甚至继承了盲点。虽然作者用 GST-Train 微调 Qwen3-VL 提分显著，但这合成数据生成的“完美世界”能否迁移到真实物理世界，还是个问号。总之，这 benchmark 像面照妖镜，照出了 VLM 在长程空间记忆上的集体裸奔，也指明了数据驱动改进的可行路径。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">具身智能的核心在于空间智能，即感知布局、追踪位置并维持全局一致的空间理解。然而现有基准多局限于单图或少数视角 [10, 16, 25]，关注局部属性而非全局场景意识。虽已有视频基准 [14, 28] 探索全局理解，但存在三大缺陷：一是未区分单帧可解任务与跨帧全局推理任务，导致评估不纯粹；二是空间度量粗糙，多用前后左右等粗粒度关系，缺乏精确角度距离；三是缺乏显式全局场景表征（如顶视图）来评估自洽性。这导致模型可能通过局部线索作弊，无法真正评估其构建长程空间记忆的能力。因此，需要一种强制模型整合长时程观测、从新视角推理并映射到全局表征的基准。</div><div class="en">—</div><figure><img src="assets/2608.05747/fig1.webp" alt="fig1"><figcaption>Figure 1 Overview of GST-Bench. We evaluate global spatial awareness along three core competencies — self localization (Where am I?), object localization (Where is the target?), and scene structure understanding (What does the scene look like?). Given an egocentric exploration video and a novel query view, models must localize themselves, reason about targets unseen in the current view and map observations onto a global top-down representation. As shown on the right, even the strongest VLM (Gemini-3-Pro, 42.68) falls far below the human baseline (79.08).</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">GST-Bench 构建了一套自动化的数据生成流水线。首先基于 OmniGibson 仿真环境，利用 BEHAVIOR-1K [11] 等资产生成 50 个多样室内场景。核心流程包括：1. 探索视频生成：采样空间分布视点连接成轨迹，渲染长时程第一人称视频；2. 目标标注视频：对可见目标实例叠加红框，支持视觉模态定位；3. 顶视图生成：提供三种抽象层级（照片级、占用图、平面图）作为全局表征；4. 当前视图生成：从独立于探索轨迹的新视点采样，且强制目标不可见，确保无法单帧求解。任务分为三大核心能力：自我定位（Where am I?）、物体定位（Where is the target?）和场景结构理解（What does the scene look like?），细分为 12 个子任务。评测指标针对距离、角度、点位和选择题分别设计（如 MRA、角度误差）。此外，还构建了 GST-Train 训练集，通过相同流水线生成，用于验证针对性数据对缩小差距的有效性。</div><div class="en">—</div><figure><img src="assets/2608.05747/fig2.webp" alt="fig2"><figcaption>Figure 2 Representative GST-Bench samples from each of the twelve task types, organized by the three core competencies: self localization, object localization, and scene structure understanding.</figcaption></figure>
+<figure><img src="assets/2608.05747/fig3.webp" alt="fig3"><figcaption>Figure 3 Overview of the automatic data generation pipeline. Starting from diverse simulation scenes, the pipeline produces exploration videos, object-annotated videos, novel-viewpoint images, top-down images at three abstraction levels, and template-based QA pairs, followed by automated filtering and human verification.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">评估了 22 个 SOTA VLM，涵盖闭源、开源及具身模型。结果显示人类基准 79.08 分，最强零样本模型 Gemini-3-Pro [7] 仅 42.68 分，差距显著。开源模型大多接近随机猜测。通过构建局部变体（Local-Video/Image）解耦推理与感知，发现闭源模型主要败于跨帧空间整合，而开源模型在局部感知和整合上均存在缺陷。具身微调模型（如 Robix [5]）并未表现出优势，继承了一般 VLM 的全局推理盲区。针对性微调实验显示，Qwen3-VL [2] 在 GST-Train 上微调后，分数从 25.89 提升至 53.52，超越所有零样本模型，证明针对性数据监督能有效缓解长程空间推理挑战，但仍未完全达到人类水平。这表明单纯靠模型架构升级不够，必须配合高质量的空间推理数据。</div><div class="en">—</div><figure><img src="assets/2608.05747/fig4.webp" alt="fig4"><figcaption>Figure 4 Illustration of the three controlled settings used to disentangle global reasoning from local perception. Global (target absent from the current view, requires cross-frame integration), Local-Video (current view contains the target, exploration video redundant), and Local-Image (exploration video removed, reduced to single-image spatial understanding).</figcaption></figure>
+</body></html>

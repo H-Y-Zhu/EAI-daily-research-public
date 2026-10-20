@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JEPLO: Joint-Embedding Predictive Learning for LiDAR-Based Legged Locomotion</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>JEPLO: Joint-Embedding Predictive Learning for LiDAR-Based Legged Locomotion</h1>
+<p class="meta">Qihao Yuan, Yixuan Qiu, Ziyu Cao, Ming Cao, Kailai Li<br>
+<a href="http://arxiv.org/abs/2609.15770v1">abs</a><a href="https://arxiv.org/pdf/2609.15770v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 LiDAR 爱好者和 SLAM 厌恶者都送了一份大礼。JEPLO 用 JEPA 架构搞定了腿足机器人的感知运动，不用显式建图，直接预测潜空间。虽然“无映射”听起来很性感，但本质上还是靠累积点云投影，并非完全无记忆，这点得诚实点。不过，在遮挡和噪声下确实比 PIE 和 WMP 稳多了。Sim-to-Real 跑得挺顺，Jetson 上也能跑，就是不知道户外大风天会不会飘。总之，是个把 JEPA 从图像领域硬塞进机器人运动控制的有趣尝试，虽然没解决所有 LiDAR 稀疏性问题，但胜在简单粗暴有效，值得给个好评。对于不想维护复杂 SLAM 系统的团队，这方案简直是救命稻草，尽管它可能只是把复杂度从后端移到了前端网络里，但能跑就是硬道理。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有腿足运动主要靠 RGB-D，但光照一差就瞎 [4]。LiDAR 虽然抗光，但扫描不规则，传统方法得靠 SLAM 建图 [2][3]，计算重还容易崩。JEPA 不用重建像素，直接预测潜状态，适合这种噪声大的场景。作者想解决的就是“不用 SLAM 也能在复杂地形跑”的问题，特别是 LiDAR 特有的稀疏和遮挡。现有方法如 PIE [5] 和 WMP [6] 依赖重建，容易过拟合噪声。JEPLO 试图通过隐式预测绕过这些坑，让机器人更鲁棒。这动机很实在，毕竟谁也不想让机器人在黑暗里因为一个点云缺失就摔跟头。而且显式映射对计算资源要求高，不适合轻量化部署。</div><div class="en">—</div><figure><img src="assets/2609.15770/fig1.webp" alt="fig1"><figcaption>Fig. 1: JEPLO enables mapping-free LiDAR-based percep- tive locomotion onboard quadruped robots across diverse scenarios. Terrain height variations are 18 cm to 44 cm.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心是 PE-JEPA 世界模型 + CJTS 训练。LiDAR 点云先累积 5 帧投影成深度图，ViT 编码。本体感受用 MLP。GRU 做记忆，预测下一步本体和深度潜变量。加了 SIGReg 防止坍塌。训练时 Teacher 有高度图特权信息，Student 学 Teacher 的潜变量，PPO 优化策略。部署时只要 Student 和 JEPA 隐藏状态。具体流程是：输入 proprioception 和 depth history，经过编码器得到 latent，GRU 更新状态，预测头输出下一步 latent。Loss 包括预测误差和 SIGReg 正则化。Teacher-Student 是并行的，Teacher 用 PPO 优化，Student 模仿 Teacher 的 embedding。这种设计让 Student 能学到 Teacher 的决策逻辑，同时适应自己的传感器限制。JEPA 部分独立优化，避免任务梯度污染。</div><div class="en">—</div><figure><img src="assets/2609.15770/fig2.webp" alt="fig2"><figcaption>Fig. 2: JEPLO pipeline. Slashes denote stop-gradient.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">仿真用 MuJoCo，真实用 Unitree Go2 + Livox Mid-360。对比 PIE [5] 和 WMP [6]。指标是成功率。遮挡测试显示 JEPLO 最稳，尤其是高箱子和台阶。真实世界能爬 53cm 箱子，7.5 米楼梯。Latent 分析显示遮挡下特征没散架。在 80% 遮挡下依然能跑，这比基线强太多。计算量也低，Jetson 上 CPU 占用 12%。数据集也开源了，方便大家复现。总的来说，实验设计挺扎实，不仅看成功率，还看了 latent 的鲁棒性，没光看数字。Sim-to-Real 验证了方法的有效性，证明了无需 SLAM 也能实现复杂地形穿越。</div><div class="en">—</div><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2609.15770/fig3.webp" alt="fig3"><figcaption>Fig. 7: Locomotion across diverse terrains. (a) Omnidirectional stair traversal and in-place rotation on stairs with a 15 cm rise and 25 cm run. (b) Traversal of boxes up to 53 cm high, including angled approaches and consecutive climbs.</figcaption></figure>
+<figure><img src="assets/2609.15770/fig4.webp" alt="fig4"><figcaption>Fig. 8: Gait analysis for climbing a 53 cm-high box.</figcaption></figure>
+<figure><img src="assets/2609.15770/fig5.webp" alt="fig5"><figcaption>Fig. 15: t-SNE latent visualization under masks for Steps (purple), Rough (blue), and Stairs (green).</figcaption></figure>
+<figure><img src="assets/2609.15770/fig6.webp" alt="fig6"><figcaption>Fig. 14: Latent representations from unoccluded (red) and 25%-100% masked (blue) scans in Steps.</figcaption></figure>
+</body></html>

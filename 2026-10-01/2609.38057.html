@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EVO-WAM: Evolving World Action Models through Video-Action Verification</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>EVO-WAM: Evolving World Action Models through Video-Action Verification</h1>
+<p class="meta">Shiyang Zhou, Xionghao Wu, Wenbo Li, Shenghe Zheng, Jiyao Zhang, Songsong Yu<br>
+<a href="http://arxiv.org/abs/2609.38057v1">abs</a><a href="https://arxiv.org/pdf/2609.38057v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 WAM 搞了个“自我进化”的戏码，听起来很性感，但本质还是靠 VLM 和 IDM 当裁判。虽然号称不用外部执行，但验证成本不低。Cosmos3 在仿真里从 26.9% 涨到 68% 确实亮眼，但实机任务里 20% 到 76.7% 的飞跃，多少有点“仿真过拟合”的嫌疑，毕竟 RoboTwin 2.0 的随机化再强也抵不过物理世界的摩擦力。而且依赖 Qwen3.8 这种大 VLM 做验证，推理延迟和成本谁买单？不过能利用自身生成的视频动作对来迭代，确实比单纯依赖外部世界模型回放 [8] 更直接。这种“自产自销”的模式在机器人领域算是个新尝试，但验证器的准确性直接决定了进化上限，若 VLM 误判，模型可能越学越偏。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">机器人学习面临新任务泛化难的问题，收集专家演示成本高 [13]。现有的 WAM 如 Cosmos3 [27] 和 DreamZero [42] 虽能预测视频动作，但生成的视频未必完成任务，且动作与视频可能不一致导致执行失败。如图 6 所示，相同初始条件下，模型可能生成成功或失败视频，且动作可能无法实现视频行为。现有方法利用世界模型生成经验改进策略 [10, 11]，或依赖外部演示 [8]，未能充分利用 WAM 自身的视频先验作为未见任务的监督信号。作者观察到 WAM 可通过学习自身生成的可靠轨迹来改进，但需解决无外部反馈下的自回归生成及视频动作一致性验证问题。这解决了 WAM 在未见任务上“瞎猜”且无法自我修正的痛点，无需额外数据即可提升性能。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">EVO-WAM 框架包含生成、验证、改进三步循环。首先生成阶段，通过状态预测和锚定多帧上下文，使 WAM 能在无外部观测反馈下完成自回归 rollout，确保轨迹完整性。具体而言，模型预测每个 chunk 结束时的机器人状态，并保留初始帧作为锚点，提供场景持久参考。验证阶段分两步：VLM 检查任务完成度，通过描述物体关系和子目标满足情况筛选前缀，需通过多次投票确认；IDM 重建动作并与 WAM 生成动作比对，计算均方误差确保视频动作一致性。改进阶段将验证通过的前缀与原始数据混合，进行监督微调，迭代更新模型。该流程无需外部执行，仅依赖模型自身预测与验证模块。关键创新在于状态预测使得闭环生成成为可能，而 IDM 验证保证了动作的物理合理性，避免了无效轨迹污染训练分布。</div><div class="en">—</div><figure><img src="assets/2609.38057/fig2.webp" alt="fig2"><figcaption>Figure 2: Overview of EVO-WAM. (1) Generate: WAMr−1 autoregressively generates video-action-state trajectories from an initial scene and task instruction. (2) Verify: a VLM identifies task-completing prefixes, and an IDM checks their video-action consistency. (3) Improve: verified prefixes accumulated across rounds are combined with the original training data to obtain WAMr, which generates candidates for the next round.</figcaption></figure>
+<figure><img src="assets/2609.38057/fig3.webp" alt="fig3"><figcaption>Figure 3: Video-action verification. (a) A VLM checks subgoals one at a time through description and judgment. (b) An IDM reconstructs actions from the generated videos and compares them with WAM- generated actions at the fixed visual endpoint. Prefixes passing this check undergo endpoint vote confirmation before entering training.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 RoboTwin 2.0 [4] 的 7 个未见任务上，EVO-WAMCosmos3 平均成功率从 26.9% 提升至 68.0%，优于 DreamZero 和 VLA 基线 [29]。实机 Franka 机器人上，3 个长视距任务（如叠碗、放鸭子）从 20.0% 提升至 76.7%。消融实验表明，仅用 VLM 验证效果不如 VLM+IDM，证明动作一致性至关重要。此外，更换较小 VLM 模型（Qwen3.5-27B [32]）仍能保持性能，显示框架对验证器鲁棒。数据积累策略也证实混合历史数据优于仅用最新数据。这证明了在未见任务上，经过验证的生成数据比原始数据更有价值，且实机表现显著优于仿真基线。</div><div class="en">—</div><figure><img src="assets/2609.38057/fig1.webp" alt="fig1"><figcaption>Figure 1: EVO-WAM improves world action models through verified experience. Left: unseen tasks in simulation and long-horizon composite tasks in the real world. Middle: the generate-verify-improve cycle, where learning from verified rollouts improves task execution. Right: Cosmos3’s performance gains over successive rounds in simulation and the real world.</figcaption></figure>
+<figure><img src="assets/2609.38057/fig4.webp" alt="fig4"><figcaption>Figure 4: Unseen-task improvement in RoboTwin 2.0. (a) Example task scenes. (b) Cosmos3’s per-task success rates before self-training (Round 0) and after four rounds (Round 4).</figcaption></figure>
+<figure><img src="assets/2609.38057/fig5.webp" alt="fig5"><figcaption>Figure 5: Real-robot tasks. Initial and goal scenes for three unseen composite tasks.</figcaption></figure>
+<figure><img src="assets/2609.38057/fig6.webp" alt="fig6"><figcaption>Figure 6: Placing two ducks. Top and bottom show real executions before and after EVO-WAM. The middle shows generated candidates and their visual-goal and video-action consistency checks; prefixes passing both checks are used to update the policy.</figcaption></figure>
+<figure><img src="assets/2609.38057/fig7.webp" alt="fig7"><figcaption>Figure 7: Effect of data accumulation. Success in adaptation scenes across self-improvement rounds under the two configurations described above.</figcaption></figure>
+<figure><img src="assets/2609.38057/fig8.webp" alt="fig8"><figcaption>Figure 8: Initial configurations for physical evaluation. Three layouts for Stack Bowls, three for Place Ducks, and two for Load the Air Fryer. Each task has ten trials per evaluated policy: 3/3/4 across the three-layout tasks and 5/5 across the two air-fryer layouts.</figcaption></figure>
+<figure><img src="assets/2609.38057/fig9.webp" alt="fig9"><figcaption>Figure 9: Stacking three bowls. The instruction is: “Stack the pink bowl on the blue bowl, then lift both together onto the white bowl.” Before shows the bowls still separated. The imagined trajectories illustrate different stacking orders and verification outcomes; After shows the two successive stacking operations.</figcaption></figure>
+<figure><img src="assets/2609.38057/fig10.webp" alt="fig10"><figcaption>Figure 10: Loading the air fryer. The robot must pull the red handle to open the drawer and transfer the bread from the plate into it. Before shows the bread still held by the gripper. Rollout 1 distorts the drawer and bread during transfer, while Rollout 3 passes verification. After shows drawer opening, bread transfer, and release.</figcaption></figure>
+</body></html>

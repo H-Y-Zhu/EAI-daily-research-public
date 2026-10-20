@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>τ: Learning Touch-Augmented Vision-Language-Action Models from Future Visual Supervision</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>τ: Learning Touch-Augmented Vision-Language-Action Models from Future Visual Supervision</h1>
+<p class="meta">Ning Cheng, Jinan Xu, Wanlin Li, Yangzhi Chen, Jing Gao, Yiqun Wang<br>
+<a href="http://arxiv.org/abs/2607.24485v1">abs</a><a href="https://arxiv.org/pdf/2607.24485v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">τ 这名字起得挺有哲学味，试图用未来的视觉监督来教触觉模型‘预判’物理交互，算是给 VLA 加了个‘触觉雷达’。亮点在于 JEPA 风格的自监督，不用重建像素就能学动态，推理时不拖后腿，这点很实在。不过，双视角监督反而不如单视角稳，说明多模态融合不是简单的 1+1&gt;2，还得看怎么对齐。数据集 TacAura 开源是好事，但 400 条演示对于‘大模型’时代略显寒酸，不过对于接触丰富任务确实够用了。整体性能提升显著，但泛化性在不同任务间差异大，精密插入任务仍受视觉干扰影响，未来需在多模态对齐和抗干扰上继续打磨。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">VLA 模型如 π0 (Black et al. 2024) 虽强，但主要依赖视觉，在接触丰富任务中容易‘眼高手低’。现有触觉方法如 ForceVLA (Yu et al. 2025) 多关注瞬时接触或 6D 力矩，忽略了高维触觉信号的时间动态。数据层面，大规模预训练成本高，特定任务演示少。如何在小数据下让触觉捕捉物理交互动态并融入 VLA，是个难题。现有方法如 ForceFlow (Zhang et al. 2026b) 虽考虑了动态，但依赖力觉而非高维触觉纹理，难以捕捉精细接触模式。τ 试图填补这一空白，利用视觉监督触觉，解决数据稀缺下的表示学习问题。</div><div class="en">—</div><figure><img src="assets/2607.24485/fig2.webp" alt="fig2"><figcaption>Figure 2: Contact-rich task suite of TacAura.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">τ 基于 π0.5 骨干，核心是触觉编码适配模块和 JEPA 分支。首先，触觉信号经 Touch Encoder 提取特征，再通过 Adapter 投影到 VLA 的语义空间，与视觉/语言 Token 融合，形成统一 Token 序列。其次，引入辅助预测分支：基于当前触觉和后续动作，预测未来视觉特征的变化（而非绝对特征），目标来自 VLA Vision Encoder 提取的未来观测。损失函数加权触觉变化幅度，强调关键接触阶段，防止微小噪声主导训练。训练时联合优化模仿学习和自监督目标，推理时移除预测分支，零开销。这种设计既保留了 VLA 的语义理解能力，又赋予了其感知物理交互的触觉维度，且无需额外部署成本。此外，TacAura 数据集的构建也采用了轻量级同步方案，确保触觉数据能无缝接入现有 VLA 训练管线，降低了多模态数据对齐的门槛。</div><div class="en">—</div><figure><img src="assets/2607.24485/fig1.webp" alt="fig1"><figcaption>Figure 1: τ Framework. Multi-view visual observations, tactile signals, and language instruction are encoded into modality- specific tokens and fused by the large language model in the vision-language-action model for action chunk prediction. During training, an auxiliary JEPA-style self-supervised objective predicts future visual representations from action-conditioned latent features, enabling predictive multimodal representation learning without pixel-level reconstruction. Notably, the JEPA-style self-supervised learning is applied only during training and is removed during inference.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 TacAura 数据集（插插头、USB、盖章、擦白板）上测试，共 400 条演示。基线包括 π0, π0.5, ForceVLA 等。τ-WristSup 平均成功率 71.25%，远超基线 ForceVLA 的 30%。消融显示触觉模块最关键，移除后成功率暴跌至 28.75%。自监督学习显著提升接触推理能力，尤其在擦白板任务中。泛化测试中，擦白板任务对未见物体/场景鲁棒，成功率保持 90% 以上，但 USB 插入受物体几何和视觉干扰影响较大，成功率下降明显。这表明 τ 在接触丰富任务上优势明显，但在精密对齐任务上对视觉干扰仍敏感，未来需增强抗干扰能力。</div><div class="en">—</div><figure><img src="assets/2607.24485/fig5.webp" alt="fig5"><figcaption>Figure 5: Success rates for USB insertion and white- board erasing under in-distribution, object-generalization, and scene-generalization settings.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2607.24485/fig3.webp" alt="fig3"><figcaption>Figure 3: Qualitative results of policy execution.</figcaption></figure>
+<figure><img src="assets/2607.24485/fig4.webp" alt="fig4"><figcaption>Figure 4: Training and zero-shot testing settings for USB insertion and whiteboard erasing tasks. The models are trained on seen objects and tested on unseen objects and distractor sets to assess their generalization to novel objects and complex scenes.</figcaption></figure>
+</body></html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VFILC: Accurate Frequency Extrapolations in Imitation Learning via Sampling Frequency ILC</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>VFILC: Accurate Frequency Extrapolations in Imitation Learning via Sampling Frequency ILC</h1>
+<p class="meta">Nozomu Masuya, Toshiaki Tsuji, Sho Sakaino<br>
+<a href="http://arxiv.org/abs/2606.20056v1">abs</a><a href="https://arxiv.org/pdf/2606.20056v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给模仿学习里的“变速”难题加了个反馈控制器，算是给 VFIL 这个“裸奔”模型穿上了反馈铠甲。作者声称在擦拭和摇晃任务里频率误差分别降低了 81% 和 50%，听起来很性感，但仔细看实验细节，混合任务里糖盐洒了一地（图 [4]），摇晃任务里还出现了拉试管角度不对的诡异行为（图 [5]）。说白了，这就是用迭代学习控制（ILC）硬扛非线性接触力，虽然有效，但低频率下效率低，而且每次迭代都要重跑 15 秒，效率感人。不过能在未训练的高频下 extrapolate，确实比纯插值强，只是这“迭代”的代价有点大，且对 PID 增益敏感，稍不注意就会震荡。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有的模仿学习处理变速运动时，要么只能插值（interpolated），要么外推（extrapolated）就崩。VFIL [7] 试图通过调整神经网络采样频率来解决，但它是开环的，遇到接触丰富的任务（contact-rich），非线性阻力会导致频率偏差，尤其在高频外推时误差显著。之前的工作如 [15] 虽然用了力控，但没解决时间域上的时序误差，且依赖大量数据。我们需要一种既能变速又能自我修正的方法，特别是在高频外推时，利用反馈补偿环境非线性带来的延迟，避免像 [14] 那样假设环境变化可忽略。</div><div class="en">—</div><figure><img src="assets/2606.20056/fig1.webp" alt="fig1"><figcaption>Fig. 2. Configurations of VFIL and VFILC.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心是 VFILC，结合了 VFIL 和 ILC。数据流上，先用双边控制收集人类示范，训练 LSTM 网络（图 [3]）。推理时，VFIL 部分负责根据目标频率动态调整 NN 的采样率，将变速度运动归一化。ILC 部分负责纠错：第一 iteration 用前馈（feedforward）直接跑 VFIL，后续 iteration 用 PID 控制器根据上一轮的频率误差（$f_{err}$）调整输入频率指令（$f_{ref}$）（图 [1]）。这样既保留了 VFIL 的变速能力，又用反馈修正了高频下的延迟。公式上，$f_{ref}$ 由指令频率加上 PID 项组成，确保收敛。反馈仅在每次迭代结束时进行，防止采样频率波动。</div><div class="en">—</div><figure><img src="assets/2606.20056/fig3.webp" alt="fig3"><figcaption>Fig. 6. Configuration of the NN model.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">用了 CRANE-X7 机械臂，三个任务：擦拭、混合、摇晃。基线是非 VFIL 和纯 VFIL。指标是实际频率与指令频率的误差。结果在 1.4Hz（训练 0.6Hz）下，擦拭任务误差降了 81%。混合任务在未见过的糖盐环境下也稳定，但洒料风险高（图 [4]）。摇晃任务在 25ml 水（未训练）下表现稳健，误差降 50%。但也暴露了问题，比如混合任务洒料，摇晃任务动作混淆（图 [5]）。成功率在 81% 到 98% 之间，证明方法有效但非完美。</div><div class="en">—</div><figure><img src="assets/2606.20056/fig2.webp" alt="fig2"><figcaption>Fig. 4. CRANE-X7 manipulator with a cross-structured hand.</figcaption></figure>
+<figure><img src="assets/2606.20056/fig4.webp" alt="fig4"><figcaption>Fig. 14. Spilling observed in the mixing task.</figcaption></figure>
+<figure><img src="assets/2606.20056/fig5.webp" alt="fig5"><figcaption>Fig. 17. Mixed behaviors between pulling and shaking.</figcaption></figure>
+</body></html>

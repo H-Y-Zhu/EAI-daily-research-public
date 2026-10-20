@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Continuous Conditioning of VLAs with Augmenting EMG and Visual Task Descriptors</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Continuous Conditioning of VLAs with Augmenting EMG and Visual Task Descriptors</h1>
+<p class="meta">Edward W. Staley, Connor O. Pyles, Rahul Hingorani, Frank Camargo, Griffin Milsap, Jared Markowitz<br>
+<a href="http://arxiv.org/abs/2610.01794v1">abs</a><a href="https://arxiv.org/pdf/2610.01794v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给VLA模型来了一剂“非语言”的强心针，试图证明在混乱的厨房里，光靠嘴说（语言）是不够的，还得靠“肌肉记忆”（EMG）和“高亮标记”（视觉分割）。作者很聪明地避开了复杂的端到端大模型训练，而是通过微调现有模型，在输入端搞点“小动作”。结果确实挺打脸：在整洁的桌面上，多模态输入只是锦上添花，但在杂物堆里，语言指令瞬间失效，而EMG和视觉掩码成了救命稻草。不过，这研究也有点“凡尔赛”：EMG方案依赖真人实时划手腕，视觉方案依赖仿真器里的完美分割，真到了现实世界，用户愿意戴肌电手环吗？仿真器能完美模拟所有遮挡吗？这种“实验室里的完美辅助”离“通用机器人”还有段距离，但至少在“乱糟糟”这个痛点上，确实戳中了VLA的软肋。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">Vision-Language-Action (VLA) 模型虽然流行，但过度依赖语言指令作为任务条件，这在复杂、杂乱或存在歧义的场景中显得力不从心 [1]-[7]。当环境 cluttered（杂乱）时，人类往往通过手势、眼神或视觉提示来辅助表达意图，而不仅仅是语言 [8]-[10]。现有工作如 OpenVLA [2] 和 RT-1 [1] 主要依赖文本描述，缺乏对非语言连续信号的利用。虽然已有研究探索了脑机接口（EEG）或眼动追踪 [12]-[15]，以及视觉提示（如关键点、掩码）[16]-[20]，但大多集中在辅助控制或特定任务，缺乏将 EMG 和视觉分割作为连续状态输入直接融合进 VLA 策略的通用性验证。本文旨在填补这一空白，验证在语言指令模糊（underspecified）的情况下，引入 EMG 和视觉标注是否能显著提升 VLA 在分布外（OOD）和杂乱场景下的鲁棒性。</div><div class="en">—</div><figure><img src="assets/2610.01794/fig1.webp" alt="fig1"><figcaption>Fig. 1. An overview of vision-language-action (VLA) model architectures and how we propose to modify the inclusion of task information.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">整体框架基于 Flow Matching 架构的 VLA 模型（SmolVLA 和 π0.5），核心创新在于将任务条件从“完整语言描述”替换为“通用模糊文本 + 连续模态增强”。<br><br>1. 数据流与微调策略：模型接收观测 Ot = (ℓt, It, qt)，其中 ℓt 为模糊文本（如“拿起方块”），It 为图像，qt 为本体感知。微调目标是最小化 Flow Matching 损失，将噪声分布映射到动作分布。<br><br>2. 实验一：EMG 条件化 (EC-VLA)。将 8 通道肌电（EMG）包络信号作为连续输入，与本体感知向量 qt 拼接，形成增强状态 qEC = [q; EMG]。人类通过手腕动作（屈曲/伸展/放松）提供实时意图，替代了具体的语言指令（如“拿左数第二个”）。<br><br>3. 实验二：视觉标注 (VA-VLA)。在图像输入 It 上叠加视觉分割掩码，用绿色高亮目标物体，蓝色高亮目标位置，形成增强图像 IV A。此时文本指令仅保留模糊的“拿起物体并放置”，具体目标由视觉标注定义。<br><br>4. 训练细节：EC-VLA 冻结骨干网络，微调动作专家；VA-VLA 微调整个架构。两者均在特定任务数据集上训练，并在测试时对比仅使用完整语言描述的基线模型。</div><div class="en">—</div><figure><img src="assets/2610.01794/fig2.webp" alt="fig2"><figcaption>Fig. 2. Camera views and gestures from the first experiment. Top row: Visual state information from the scene, showing an overhead view of four cubes in an uncluttered setting on the left, a typical wrist view in the center, and an example of a cluttered scene on the right. Bottom row: Wrist gestures used by participants to condition EC-VLA during training and test.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在两个场景进行：1) SO-101 机械臂的方块抓取（3名参与者，EMG输入）；2) RoboCasa 仿真环境中的16个抓取放置任务（Franka Panda机械臂，视觉标注）。基线模型使用完整描述性文本，增强模型使用模糊文本+对应模态。<br><br>评测指标包括任务完成度评分（分阶段给分：失败、移动、抬起、成功）和成功率。结果（Table II）显示：在分布内（无杂乱）场景，增强模型性能微幅提升或持平；但在分布外（杂乱）场景，EC-VLA 成功率提升20%（从30%到50%），完全失败率从50%降至6%；VA-VLA 完全失败率从47%降至25%。消融分析表明，EMG 和视觉标注在消除歧义方面效果显著，尤其是在基线模型无法识别目标或执行失败时，增强模态提供了关键的纠错信号。</div><div class="en">—</div><figure><img src="assets/2610.01794/fig3.webp" alt="fig3"><figcaption>Fig. 3. Behavior detail for the EC-VLA (left) and VA-VLA (right) trials, showing various partial success criteria as portions of trials. These include failure (red), stage 1 partial credit (yellow), stage 2 partial credit (light green), and success (dark green). The black lines show changes in task completion score, which is an aggregate score of these behaviors. EC-VLA values are averages of all three participant models, and VA-VLA values are only taken from the tasks that can add clutter. (C) denotes cluttered trials</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2610.01794/fig4.webp" alt="fig4"><figcaption>Fig. 5. State information used in experiment 2, which always uses a left camera, a wrist camera, and a right camera. In the baseline model, the images are unaltered and paired with a text description (top). In VA-VLA (center), the text is generic and the left and right cameras have visual annotations for the target object (green) and destination (blue). In the cluttered trials (bottom), additional objects are placed in the scene. In practice this uses all three views and is either annotated or not depending on the model.</figcaption></figure>
+</body></html>

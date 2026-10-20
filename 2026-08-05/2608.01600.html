@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Perception-and-action system for humanoid robot task execution in construction</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Perception-and-action system for humanoid robot task execution in construction</h1>
+<p class="meta">Yanxi Liu, Yizhi Liu<br>
+<a href="http://arxiv.org/abs/2608.01600v1">abs</a><a href="https://arxiv.org/pdf/2608.01600v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给“人形机器人进工地”的 hype 泼了点冷水，但也递了把梯子。作者搞了个 VPA 系统，把工人动作“翻译”给机器人，再用 RL 控制全身。亮点是 PoseNet 的隐空间对齐和 ActionNet 的师生蒸馏，试图解决形态不匹配和平衡问题。但吐槽点也很明显：82.45mm 的关节误差在砌砖场景简直是“抽象派艺术”，而且只测了 8 个简单动作，离真正的“工地老手”还差得远。说是“早期步骤”，其实是给投资人看的 PPT 级 demo，不过至少没在工地上摔跟头。Sim-to-Real 的 PD 控制器虽然简单，但保证了落地，只是泛化性存疑。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">建筑工地是高危环境，工伤事故占全球工作相关死亡的 30% (Hu et al., 2025)，且劳动力短缺 (Deloitte, 2026)。现有机器人多为单任务 (如 SAM 砌砖、Spot 巡检)，缺乏人形机器人的通用性。但人形机器人直接部署面临两大难题：一是人类动作数据无法直接映射到机器人运动学结构 (He, Luo et al., 2024)，现有姿态估计方法多输出人类中心数据，忽略肢体比例差异；二是现有 RL 控制器多针对日常生活，缺乏接触丰富的施工任务稳定性 (Cheng et al., 2024)。本文旨在解决从人类示范到机器人可执行动作的跨域学习与控制问题，填补形态不匹配与物理可行性之间的鸿沟。</div><div class="en">—</div><figure><img src="assets/2608.01600/fig5.webp" alt="fig5"><figcaption>Fig. 5. Experimental setup for capturing human demonstrations of construction-related tasks: (a) layout of the data-collection workspace; (b) subject familiarization with each action prior to recording; (c) wood-carrying demonstration; (d) stair-climbing demonstration; and (e) flag-signaling demonstration.</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">系统分为感知与行动两阶段。Humanoid-PoseNet 负责视觉感知，包含 3D 姿态估计和人体到机器人的重定向。它使用共享隐空间的编码器 - 解码器结构，通过骨方向角误差 (BAE) 构建三元组损失 (L1)，并结合重构损失 (L2) 和隐空间一致性损失 (L3)，让人类姿态和机器人姿态在隐空间对齐，解决形态差异。Humanoid-ActionNet 负责控制，采用师生强化学习架构。Teacher 策略在仿真中利用特权信息训练，Student 策略通过蒸馏仅依赖本体感知，实现 Sim-to-Real 迁移。奖励函数包含关节跟踪、根速度、足部接触等物理感知项，确保动态稳定性。PPO 优化使用 Actor-Critic 结构，通过 GAE 计算优势函数，更新策略网络。</div><div class="en">—</div><figure><img src="assets/2608.01600/fig1.webp" alt="fig1"><figcaption>Fig. 1. Overview of the proposed VPA system for humanoid construction task execution.</figcaption></figure>
+<figure><img src="assets/2608.01600/fig2.webp" alt="fig2"><figcaption>Fig. 2. Overall structure of the Humanoid-PoseNet.</figcaption></figure>
+<figure><img src="assets/2608.01600/fig3.webp" alt="fig3"><figcaption>Fig. 3. Overall structure of the proposed Humanoid-ActionNet with teacher-student reinforcement learning architecture and PPO optimization techniques.</figcaption></figure>
+<figure><img src="assets/2608.01600/fig4.webp" alt="fig4"><figcaption>Fig. 4. PPO training loop for the teacher policy in Humanoid-ActionNet.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">使用 Unitree G1 人形机器人在仿真和真实环境测试。数据集包含 8 种施工相关动作（如搬运管道、搬砖）。评估指标为 MPJPE，平均误差 82.45mm。消融实验对比了不同姿态估计模型（如 VideoPose3D）。结果证明系统能可靠执行任务，Sim-to-Sim 和 Sim-to-Real 均成功。但误差较大，且未涉及复杂接触任务。仿真环境使用 IsaacGym 和 MuJoCo，真实部署通过 PD 控制器平滑执行。</div><div class="en">—</div><figure><img src="assets/2608.01600/fig6.webp" alt="fig6"><figcaption>Fig. 6. Dataset annotation and pose representations used to train and evaluate Humanoid-PoseNet and to generate motion-sequence inputs for Humanoid-ActionNet: (a) OptiTrack 30-joint skeleton; (b) mapped 21-joint human pose; (c) 14-joint humanoid pose representation; (d) example annotated 3D human pose; and (e) example annotated 3D humanoid pose.</figcaption></figure>
+<figure><img src="assets/2608.01600/fig7.webp" alt="fig7"><figcaption>Fig. 7. Simulated and physical Unitree G1 humanoid robot used for sim-to-sim and sim-to-real evaluation.</figcaption></figure>
+<figure><img src="assets/2608.01600/fig8.webp" alt="fig8"><figcaption>Fig. 8. Performance of Humanoid-PoseNet in 3D human pose estimation and 3D human-to-humanoid retargeting.</figcaption></figure><h2><span class="zh">其他图片</span><span class="en">Other Figures</span></h2><figure><img src="assets/2608.01600/fig9.webp" alt="fig9"><figcaption>Fig. 9. Example human-to-humanoid retargeting result for a construction-related action (carrying-pipe).</figcaption></figure>
+<figure><img src="assets/2608.01600/fig10.webp" alt="fig10"><figcaption>Fig. 11. Sim (IsaacGym)-to-sim (MuJoCo) evaluation of the distilled student policy on the Unitree G1 across eight tested construction-related actions.</figcaption></figure>
+</body></html>

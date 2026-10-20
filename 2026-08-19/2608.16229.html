@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planner-Conditioned Diffusion for Coordinated Multi-Agent Exploration</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Planner-Conditioned Diffusion for Coordinated Multi-Agent Exploration</h1>
+<p class="meta">Marcus Yu Siong Teo, Jeric Lew, Tanishq Duhan, Guillaume Sartoretti<br>
+<a href="http://arxiv.org/abs/2608.16229v1">abs</a><a href="https://arxiv.org/pdf/2608.16229v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给多智能体探索领域送来了一剂“行为多样性”的强心针，但别急着把它吹成万能药。作者很聪明地避开了端到端多智能体训练那个“坑”，转而给扩散模型加了个“人格开关”（Planner Conditioning），让同一个模型能模仿8种不同风格的规划器。结果确实漂亮，在保持完美覆盖率的同时，显著降低了智能体的行程和负载不均。不过，吐槽点也很明显：所谓的“协调”其实全靠后期简单的“重排序”（reranking）来凑，本质上还是“各自为政”后的临时抱佛脚，缺乏真正的联合决策深度。而且，重排序的计算量随智能体数量指数级爆炸，这招在大规模集群里恐怕会直接卡死。另外，论文没把“数据量增加”和“多样性提升”的效果完全解耦，这算不算一种隐晦的“数据堆砌”？总之，是个思路清奇但工程落地仍有硬伤的佳作。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">多智能体探索的核心痛点在于：既要个体高效，又要团队不撞车、不重复。现有的解决方案往往陷入两难：传统方法（如基于边界的启发式算法）依赖人工设计的规则，缺乏长程规划能力且行为僵化 [1, 10, 17]；而端到端的多智能体强化学习虽然能直接学习协调策略，但训练极其昂贵、难以扩展且对超参数敏感 [8, 21]。扩散策略（如DARE）虽然能生成多模态的长程轨迹，但现有方法通常仅基于单一规划器的数据进行训练，导致生成的轨迹模式单一，缺乏行为多样性 [5]。当多个智能体面对相同观测时，如果都倾向于生成相似的轨迹，后续的协调机制就无从下手，只能导致冗余覆盖。因此，如何在不进行昂贵的端到端联合训练的前提下，通过提升单智能体策略的行为多样性来自然涌现出高效的团队协调，是亟待解决的问题。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">本文提出了规划器条件扩散策略（PCDP），其核心Pipeline分为训练和推理两阶段。训练阶段，作者构建了一个包含8种不同风格规划器（如贪婪最近邻、信息增益、方向偏置、TARE等）的多样化演示数据集，将规划器身份（Planner Identity）作为显式的条件输入（Conditioning Input）注入扩散模型。这使得单一模型能够学习到一个多模态的轨迹分布，即针对同一观测，输入不同的规划器ID能生成风格迥异的轨迹。推理阶段，所有智能体共享同一个训练好的单智能体策略。每个智能体独立采样K个候选轨迹（对应K种规划器条件），然后仅在局部协调范围内（基于距离图）进行“重排序”（Reranking）。重排序的目标函数最小化团队轨迹的预测重叠区域和总行程成本，从而选出互补性最强的组合。这种设计巧妙地将复杂的协调问题转化为简单的轨迹选择问题，避免了联合训练。此外，训练中还引入了规划器丢弃（Planner Dropout）机制，防止模型过度依赖规划器标签，增强了鲁棒性。</div><div class="en">—</div><figure><img src="assets/2608.16229/fig2.webp" alt="fig2"><figcaption>Fig. 2. PCDP training and execution pipeline. Planner-diverse demonstrations train a diffusion policy conditioned on graph observation and planner identity; at inference, locally coordinating agents jointly rerank sampled trajectories.</figcaption></figure>
+<figure><img src="assets/2608.16229/fig3.webp" alt="fig3"><figcaption>Fig. 3. Trajectory diversity under planner conditioning. From similar graph observa- tions, different planner conditions produce distinct trajectory modes, illustrating that the learned policy captures a multimodal exploration distribution.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">实验在4智能体仿真环境（100张测试地图）和2智能体真机平台上进行。对比基线包括经典方法（Nearest, NBVP）[1, 18]和扩散基线（DARE独立运行、DARE+重排序）。评测指标涵盖成功率、探索率、最大智能体行程、总行程和负载不平衡度。结果显示，PCDP+重排序在保持100%成功率和完美探索率的同时，最大行程、总行程和负载不平衡度均优于所有基线。消融实验最具说服力：仅靠重排序（DARE+重排序）带来的提升微乎其微，而引入规划器条件带来的多样性才是性能飞跃的关键。真机实验进一步验证了该方法在物理世界中的有效性，智能体能自发产生空间分离，无需显式的排斥机制。</div><div class="en">—</div><figure><img src="assets/2608.16229/fig1.webp" alt="fig1"><figcaption>Fig. 1. PCDP execution with two agents. Each agent independently samples a diverse set of candidate trajectories from the diffusion policy, conditioned on its own graph observation and multiple planner identities to maximize behavioral diversity. Agents within coordination range perform local reranking over their joint candidate sets, se- lecting the combination that minimizes predicted overlap and redundant coverage. The selected trajectory is then executed in a receding-horizon manner before replanning.</figcaption></figure>
+<figure><img src="assets/2608.16229/fig4.webp" alt="fig4"><figcaption>Fig. 4. Real-robot two-agent exploration under the proposed framework.</figcaption></figure>
+</body></html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>What the Guard Misses, the Robot Executes: Implied Harm in VLA Instructions</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>What the Guard Misses, the Robot Executes: Implied Harm in VLA Instructions</h1>
+<p class="meta">Sripad Karne, Arjun Balaji<br>
+<a href="http://arxiv.org/abs/2610.05818v1">abs</a><a href="https://arxiv.org/pdf/2610.05818v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文给 VLA 安全泼了一盆冷水：机器人是“听话的坏孩子”，不管指令意图多险恶，只要任务本身合法，它就照做不误。现有的安全守卫（Guards）更像是个“关键词过滤器”，只抓大张旗鼓的恶意（L3），对“话里有话”的隐含伤害（L1/L2）视而不见。最讽刺的是，机器人训练后，模型内部反而更难识别恶意了，安全信号被侵蚀。虽然实验设计严谨，控制了任务变量，但结论让人后背发凉——我们以为的安全防线，在具身智能面前可能只是纸老虎，机器人执行了守卫漏掉的伤害，这暴露了当前安全评估的严重盲区。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">VLA 模型无法像聊天机器人那样拒绝指令，安全全靠外部守卫 [3]。现有研究如 HazardArena [10] 发现模型会执行危险任务，但没细究意图表达的显隐程度。安全守卫多基于聊天数据训练 [5]，依赖表面关键词，忽略了物理场景的上下文。如果任务本身无害（如开火），但意图是伤人，守卫往往漏判。这导致机器人可能成为“无辜的帮凶”。此外，机器人训练会侵蚀 VLM 的知识 [8]，安全相关的信号是否保留尚不清楚。我们需要知道守卫是否真的能捕捉到隐含的恶意，还是只抓到了表面词汇，这对具身智能的实际部署至关重要。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">研究构建了受控意图测试：固定任务（LIBERO-Goal 厨房任务 [7]），仅改变指令中的理由显性程度（L1 隐含、L2 陈述事实、L3 直白）。测试 π0.5 [2] 和 OpenVLA-OFT [6] 两个模型。安全评估分三路：文本守卫（Llama Guard 3, WildGuard, Qwen3Guard [18,19,20]）、激活探针（线性分类器）、任务成功率。探针在机器人训练前后的语言/VLM 层进行对比，观察恶意信号是否保留。具体流程是：生成指令 -&gt; 运行机器人 -&gt; 运行守卫 -&gt; 运行探针。探针使用逻辑回归，在残差流激活上训练，区分 L3 与对照组，并排除前几层以消除词袋效应。</div><div class="en">—</div><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 LIBERO-Goal 上测试 5 个任务，51 种理由。指标包括任务成功率、守卫标记率、泄漏率（任务完成且未标记）。结果发现 π0.5 在所有显性程度下成功率均超 95%。守卫对 L3 标记率高，但对 L1/L2 几乎失效，隐含伤害泄漏率高达 95%。探针显示机器人训练后，区分善恶的 AUROC 显著下降，说明训练侵蚀了安全信号。OFT 模型因无法处理额外句子而失败，但这并非安全原因。结论是守卫依赖措辞而非意图，机器人训练削弱了内部安全信号，需要新的安全机制。</div><div class="en">—</div><figure><img src="assets/2610.05818/fig1.webp" alt="fig1"><figcaption>Figure 1: Task success and monitor flag rates for π0.5 (left) and OpenVLA-OFT (right) with the task given bare (Original), with a harmless reason (Control), and with increasingly explicit harmful reasons (L1–L3). Guard: mean flag rate of the three guards on that robot’s rollout instructions. Probe: linear probe on that robot’s activations. Original has one instruction per task, so a single flag is 20–25%. Shading: gap between task success and guard flag rate; per-run leak rates are in Table 1a. 95% CIs over reasons.</figcaption></figure>
+</body></html>

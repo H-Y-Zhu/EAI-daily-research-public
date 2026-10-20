@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Beyond Patch Removal: Persistent Adversarial Effects in Vision-Language-Action Policies</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Beyond Patch Removal: Persistent Adversarial Effects in Vision-Language-Action Policies</h1>
+<p class="meta">Enhao Wu, Fusen Guo, Yuxin Cao, Ziyang Lyu, Lin Li, Wei Song<br>
+<a href="http://arxiv.org/abs/2609.19669v1">abs</a><a href="https://arxiv.org/pdf/2609.19669v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇论文终于有人敢掀开 VLA 鲁棒性评估的遮羞布了。以往大家只盯着攻击发生时模型有多“疯”，却忘了攻击停了之后，机器人可能已经“疯”得回不来了。作者用一套硬核的状态恢复协议，证明了 adversarial patch 不仅当下能坑人，还能留下“后遗症”，哪怕把贴纸撕了，机器人也大概率完不成任务。不过，这研究也像个精致的实验室玩具，只在 LIBERO 仿真里跑通了，真到了物理世界能不能这么持久还存疑。而且他们虽然证明了“后遗症”存在，却没搞清楚到底是啥机制导致的，是状态分布偏移还是动作序列的蝴蝶效应？反正结论很明确：防御不仅要防攻击，还得防“延迟发作”，否则检测再快，晚了也是白搭。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有 VLA 对抗评估大多停留在“攻击持续期间”的指标，比如任务成功率 [7, 8] 或单步动作偏差，却忽略了闭环控制中“一步错，步步错”的累积效应。虽然已有研究指出非对抗扰动持续时间越长恢复越难 [9, 10]，但没区分这是单纯的时间累积还是对抗优化带来的特异性伤害。如果攻击只是让机器人偏离了路径，那移除扰动后理应能恢复；但如果攻击把机器人推到了训练分布外的“死胡同”，那移除扰动也没用。本文旨在回答：对抗优化是否引入了超越遮挡、误差幅度或方向持续性的额外持久效应？这对运行时防御至关重要，因为检测或移除扰动若发生在状态不可恢复之后，防御就失效了。</div><div class="en">—</div><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心是构建了一个“状态恢复协议”来量化移除扰动后的可恢复性。首先，在 OpenVLA-OFT [11] 上施加 EDPA 攻击 [8]，在特定的动作块边界（action-chunk boundaries）暂停，移除 patch，用原始策略继续执行剩余步数。为了排除干扰，设计了三种匹配控制：随机 patch 控制遮挡效应，偏差匹配控制动作误差幅度，固定方向控制方向持续性。通过对比这些控制组与对抗组的恢复率差异（Adversarial Excess），分离出纯粹的对抗持久效应。此外，作者还训练了一个 Recovery Adapter，在攻击诱导的状态下微调策略，测试不同干预延迟下的恢复能力。关键创新在于解决了仿真器状态恢复的保真度问题，发现标准快照会丢失控制器历史、观察时序等变量，导致回放不一致。因此他们扩展了 checkpoint 结构，包含控制器变量和任务变量，确保移除 patch 后的状态与原始轨迹完全一致，排除了仿真器状态丢失导致的偏差。</div><div class="en">—</div><figure><img src="assets/2609.19669/fig1.webp" alt="fig1"><figcaption>Fig. 1. Overview of (a) the threat model and attack onset, (b) post-removal recovery measurement with matched controls, and (c) the recovery adapter.</figcaption></figure><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">在 LIBERO-Long 和 Goal 基准上测试 OpenVLA-OFT [11] 及自回归 OpenVLA [2]。主要指标是移除 patch 后的任务成功率。结果显示，在 LIBERO-Long 上，攻击持续 5 个 chunk 后，对抗状态恢复率仅 36.2%，而偏差匹配和固定方向控制组分别高达 89.9% 和 87.0%，证明存在显著的对抗特有持久效应。自回归模型上也观察到类似现象。针对干预延迟的实验中，训练 Recovery Adapter 后，1 个 chunk 延迟下恢复率从 7.7% 提升至 47.4%，但延迟到 5 个 chunk 时收益骤降。这表明防御系统必须极快响应，否则状态一旦恶化，后期补救成本极高。</div><div class="en">—</div><figure><img src="assets/2609.19669/fig2.webp" alt="fig2"><figcaption>Fig. 2. Post-removal recovery and adversarial excess as a function of perturbation duration. (a) and (b) show recovery rates on LIBERO-Long and LIBERO-Goal, respectively. (c) and (d) report adversarial excess under the three matched controls. (e) and (f) show task-level Efix at t∗+5.</figcaption></figure>
+</body></html>

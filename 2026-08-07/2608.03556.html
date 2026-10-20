@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Human Centric Embodied Intelligence for Soft Wearable Robotics</title><style>
+body{font:16px/1.7 -apple-system,Segoe UI,Roboto,'Noto Sans CJK SC',sans-serif;
+ max-width:860px;margin:0 auto;padding:32px 20px;color:#1a1a1a;background:#fafafa}
+h1{font-size:24px;line-height:1.3} h2{font-size:19px;border-left:4px solid #6c8cff;
+ padding-left:10px;margin-top:34px;color:#27408b}
+.meta{color:#666;font-size:13px;margin-bottom:8px}
+.meta a{color:#6c8cff;text-decoration:none;margin-right:10px}
+figure{margin:16px 0;text-align:center}
+figure img{max-width:100%;border:1px solid #e0e0e0;border-radius:6px;background:#fff}
+figcaption{font-size:12px;color:#777;margin-top:6px}
+.badge{background:#ffb454;color:#000;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.back{font-size:13px}
+.en{display:none}
+.lang-en .zh{display:none}
+.lang-en .en{display:revert}
+.langbtn{position:fixed;top:12px;right:12px;background:#27408b;color:#fff;border:0;
+ border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;z-index:10}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+.catblock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+ min-height:72px;padding:12px;background:#e3e7ef;border:2px solid #6c8cff;
+ border-radius:10px;color:#1a2030;text-decoration:none;text-align:center;font-size:13px;font-weight:600;
+ transition:background .15s}
+.catblock:hover{background:#bcc4d6}
+.catblock .cnt{color:#2f6bff;font-size:14px;font-weight:800}
+</style></head><body>
+<button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button><script>function toggleLang(){var en=document.documentElement.classList.toggle('lang-en');try{localStorage.setItem('rd_lang',en?'en':'zh')}catch(e){}document.getElementById('langbtn').textContent=en?'中文':'EN'}(function(){try{if(localStorage.getItem('rd_lang')==='en')document.documentElement.classList.add('lang-en')}catch(e){}var b=document.getElementById('langbtn');if(b)b.textContent=document.documentElement.classList.contains('lang-en')?'中文':'EN'})();</script>
+<p class="back"><a href="../index.html" onclick="if(history.length>1){history.back();return false}"><span class="zh">← 返回</span><span class="en">← Back</span></a></p>
+<h1>Human Centric Embodied Intelligence for Soft Wearable Robotics</h1>
+<p class="meta">Rainier Natividad, Raye Chen-Hua Yeow<br>
+<a href="http://arxiv.org/abs/2608.03556v1">abs</a><a href="https://arxiv.org/pdf/2608.03556v1">pdf</a></p>
+<h2><span class="zh">论文点评</span><span class="en">Review</span></h2><div class="zh">这篇综述试图用“以人为本的具身智能”（HCEI）给软体穿戴机器人行业洗个脑，把设计重心从“电机优先”扭转到“感知认知优先”。亮点在于提出了 PCAA 框架，强调人机耦合系统的整体性，而不是把机器人当外挂。但吐槽点也很明显：作为综述，它更多是概念堆砌，缺乏实证数据支撑，很多“智能”还停留在理论阶段。比如提到的“人类数字签名”（HDS），目前连个标准都没有，怎么量化？作者把希望寄托在 2025 年后的第四代，但这更像是画饼。不过，它确实指出了现有研究忽视长期适应性和舒适度的痛点，这点值得肯定。此外，文中对现有分类法的批评切中要害，但提出的解决方案仍需时间验证，属于“理论先行”的典型代表。</div><div class="en">—</div><h2><span class="zh">研究动机</span><span class="en">Motivation</span></h2><div class="zh">现有软体穿戴机器人研究多集中在硬件材料或单一任务性能上，忽视了人机长期共存的复杂性。传统刚性外骨骼笨重且不适 [7]，而现有软体设备往往缺乏对穿戴者生理状态和意图的深层理解。文献 [13] 展示了软外骨骼的潜力，但 [39][40] 指出意图检测在长期佩戴中会因分布漂移失效，导致适应性下降。现有综述多按设备分类 [9]，缺乏将感知、认知、执行与人因整合的统一视角，难以指导下一代系统设计。本文旨在解决从“设备中心”向“以人为本”的范式转变，强调人机耦合系统的智能分布，而非单纯追求扭矩或能耗指标。通过引入 HCEI 概念，试图填补现有文献在长期个性化和临床转化之间的空白，为未来研究提供理论锚点。</div><div class="en">—</div><figure><img src="assets/2608.03556/fig1.webp" alt="fig1"><figcaption>Fig. 3. The PCAA framework as an integrative co-design lens. The four functional pillars (Perception, Cognition, Actuation, Augmentation) are arranged as a vertical stack grounded in Physical Embodiment. Information flows upward from sensing to augmentation outcomes; energy flows downward from actuation into the coupled body; a closed adaptive feedback loop returns outcome data to the perception layer. Three representative devices are mapped to the framework to show how any soft wearable system can be located within it; the color- matched strip beneath each exemplar marks which PCAA pillars the device engages (gray = absent, hatched = minimal). The walking exosuit and soft glove trace the full perception-to- augmentation flow, whereas the shape-memory-alloy fabric-muscle suit has no dedica</figcaption></figure>
+<figure><img src="assets/2608.03556/fig2.webp" alt="fig2"><figcaption>Fig. 6. Roadmap to Human-Centric Embodied Intelligence across five capability generations. The x-axis tracks functional capability from reactive assistance (Generation I) to human–AI symbiosis (Generation V); the y-axis tracks depth of human integration from device-led to co-adaptive. Generations IV–V are rendered with dashed and dotted borders respectively to indicate their prospective, hedged status. The dashed HCEI threshold at the Generation III/IV boundary marks the first point at which a wearable system achieves longitudinal, user-specific adaptation. Six cross-cutting enablers (right) must advance</figcaption></figure><h2><span class="zh">方法</span><span class="en">Method</span></h2><div class="zh">核心方法是 PCAA 框架（感知 - 认知 - 执行 - 增强），颠覆了传统的“执行器优先”设计。1. 感知：强调多模态身体链接传感，提出人类数字签名（HDS）作为个性化表征，整合运动、生理和环境数据 [43]。2. 认知：包含意图估计、持续学习和混合控制，确保在安全包络内适应个体变化，解决分布漂移问题。3. 执行：最后选择执行器，确保其符合感知和认知需求，避免硬件限制智能。4. 增强：以功能恢复为最终目标。HDS 作为中间层，将原始信号转化为状态估计，支持长期个性化。整个流程强调四者耦合，而非线性流水线。此外，文中还提出了五层智能阶梯，用于评估设备在认知层面的实现程度，从被动结构到完全的人本具身智能，为技术演进提供了量化标尺。</div><div class="en">—</div><h2><span class="zh">实验</span><span class="en">Experiments</span></h2><div class="zh">本文属于叙事性综述，无传统实验。作者通过文献调研（IEEE Xplore, PubMed 等）整合了 1995-2026 年的代表性工作。文中引用了多个案例（如软外骨骼 [13]、软手套 [16]）作为 PCAA 框架的映射示例，但未提供新数据集或基线对比。主要“结果”是概念框架的构建和五代能力路线图。局限性在于缺乏实证验证，许多 HDS 和数字孪生概念尚属前瞻性提议 [8]。虽然文中展示了设备在 PCAA 空间中的分布，但这仅是分类而非性能评测。对于临床转化，仅提出了准备度评分卡，缺乏真实世界部署的数据支持，这使得其理论框架在落地时仍面临不确定性。</div><div class="en">—</div>
+</body></html>
